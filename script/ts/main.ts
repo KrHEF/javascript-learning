@@ -26,8 +26,8 @@ function addFunctionMeta(f: object): void {
             // name = f.name;
             name = 'name';
         }
-        nodeDList.textContent = `<dl><dt>${name}</dt><dd>${f}</dd>`;
-        codeWrapper.appendChild(nodeDList);
+        nodeDList.innerHTML = `<dl><dt>${name}</dt><dd>${f}</dd>`;
+        codeWrapper.append(nodeDList);
     
     });   
 })();
