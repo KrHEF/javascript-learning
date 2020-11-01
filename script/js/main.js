@@ -45,7 +45,7 @@ if (0) {
     });
 }
 // Изменение DOM
-if (1) {
+if (0) {
     var codeWrapper_1 = document.getElementById("code-wrapper");
     addFunctionMeta({ title: "nodeType",
         warning: "Depricated", func: function () { return codeWrapper_1.nodeType; },
@@ -54,29 +54,138 @@ if (1) {
     });
     addFunctionMeta({ title: "tagName", func: function () { return codeWrapper_1.tagName; },
     });
-    addFunctionMeta({ title: "innerHtml", func: function () { return codeWrapper_1.innerHTML = "<b>Привет, мир!</b>"; },
+    addFunctionMeta({ title: "innerHtml",
+        warning: "Есть только у элементов", func: function () { return codeWrapper_1.innerHTML = "<b>Привет, мир!</b>"; },
     });
     addFunctionMeta({ title: "outerHtml",
         warning: "Не меняет элемент!", func: function () {
-            var bb = codeWrapper_1.getElementsByTagName("b");
+            var bb = codeWrapper_1.getElementsByTagName("b"); // Динамическая коллекция
             if (bb && bb.length) {
                 bb[0].outerHTML = "<i>" + bb[0].textContent + "</i>";
+                return bb[0];
             }
             return bb;
         },
     });
-    // addFunctionMeta({ title: "",
-    //     func: () => ,
-    // });
-    // addFunctionMeta({ title: "",
-    //     func: () => ,
-    // });
-    // addFunctionMeta({ title: "",
-    //     func: () => ,
-    // });
-    // addFunctionMeta({ title: "",
-    //     func: () => ,
-    // });
+    addFunctionMeta({ title: "nodeValue", func: function () { return codeWrapper_1.previousSibling.previousSibling.nodeValue; },
+    });
+    addFunctionMeta({ title: "data",
+        warning: "Почти тоже самое, что nodeValue", func: function () { return codeWrapper_1.previousSibling.previousSibling["data"]; },
+    });
+    addFunctionMeta({ title: "textContent", func: function () { return codeWrapper_1.textContent; },
+    });
+    addFunctionMeta({ title: "hidden", func: function () { return setInterval(function () { return codeWrapper_1.hidden = !codeWrapper_1.hidden; }, 5e2); },
+    });
+}
+// Атрибуты и свойства
+if (0) {
+    var codeWrapper_2 = document.getElementById("code-wrapper");
+    addFunctionMeta({ title: "attribute id as property elem.id", func: function () { return codeWrapper_2.id; },
+    });
+    addFunctionMeta({ title: "hasAttribute",
+        warning: "Имена атрибутов регистронезависимые", func: function () { return codeWrapper_2.hasAttribute('name'); },
+    });
+    addFunctionMeta({ title: "setAttribute and attributes",
+        warning: "attributes возвращает динамическую коллекцию, и т. к. дальше атрибут удаляется, то он отсутствует", func: function () {
+            codeWrapper_2.setAttribute('myAttr', '123');
+            return codeWrapper_2.attributes;
+        },
+    });
+    addFunctionMeta({ title: "removeAttribute and getAttribute", func: function () {
+            codeWrapper_2.removeAttribute('myAttr');
+            return codeWrapper_2.getAttribute('myAttr');
+        },
+    });
+    addFunctionMeta({ title: "Атрибут style - строка, свойство style - объект", func: function () {
+            codeWrapper_2.setAttribute('style', 'color: red');
+            return "\u0410\u0442\u0440\u0438\u0431\u0443\u0442 style - " + typeof codeWrapper_2.getAttribute("style") + ", \u0441\u0432\u043E\u0439\u0441\u0442\u0432\u043E style - " + typeof codeWrapper_2.style;
+        },
+    });
+    addFunctionMeta({ title: "data- атрибуты доступны через свойство dataset",
+        warning: "Атрибуты, состоящие из нескольких слов становятся свойствами, записанными с помощью верблюжьей нотации:", func: function () {
+            codeWrapper_2.setAttribute('data-my-attr', '123');
+            return codeWrapper_2.dataset.myAttr;
+        },
+    });
+    addFunctionMeta({ title: "outerHtml выводит все установленные атрибуты элемента", func: function () { return codeWrapper_2.outerHTML; },
+    });
+}
+// Добавление в DOM и удаление из DOM
+if (0) {
+    var codeWrapper_3 = document.getElementById("code-wrapper");
+    var codeWrapperClone_1;
+    var span_1, text_1;
+    addFunctionMeta({ title: "document.createElement", func: function () {
+            span_1 = document.createElement('span');
+            return span_1;
+        },
+    });
+    addFunctionMeta({ title: "document.createTextNode", func: function () {
+            text_1 = document.createTextNode("Привет, Мир!");
+            return text_1;
+        },
+    });
+    addFunctionMeta({ title: "append - вставка элемента в родительский элемент с конца",
+        warning: "Один элемент можно вставить всего 1 раз, затем он перемещаются", func: function () {
+            codeWrapper_3.append(span_1);
+            span_1.append(text_1);
+        },
+    });
+    addFunctionMeta({ title: "prepend - вставка элемента в родительский элемент с начала", func: function () {
+            var div2 = document.createElement('div');
+            div2.innerHTML = "My message:";
+            codeWrapper_3.prepend(div2);
+        },
+    });
+    addFunctionMeta({ title: "before - вставка элемента слева", func: function () {
+            var spanLeft = document.createElement('span');
+            spanLeft.innerHTML = '"';
+            span_1.before(spanLeft);
+        },
+    });
+    addFunctionMeta({ title: "after - вставка элемента справа", func: function () {
+            var spanRight = document.createElement('span');
+            spanRight.innerHTML = '"';
+            span_1.after(spanRight);
+        },
+    });
+    addFunctionMeta({ title: "replaceWith - замена node", func: function () {
+            var spanReplace = document.createElement('span');
+            spanReplace.innerHTML = 'Hello, World!';
+            span_1.replaceWith(spanReplace);
+        },
+    });
+    addFunctionMeta({ title: "insertAdjacentHTML - вставка html текста",
+        warning: "beforebegin - вставка перед элементом, afterbegin - вставка в начало элемента, beforeend - вставка в конец элемента, afterend - вставка после элемента ", func: function () { return codeWrapper_3.insertAdjacentHTML("beforeend", "<p> Абзац </p>"); },
+    });
+    addFunctionMeta({ title: "insertAdjacentText - вставка текста", func: function () { return codeWrapper_3.insertAdjacentText("beforeend", "<p> Вставка текста.</p>"); },
+    });
+    addFunctionMeta({ title: "insertAdjacentElement - вставка элемента", func: function () {
+            var divElem = document.createElement('div');
+            divElem.innerHTML = 'Другой текст';
+            codeWrapper_3.insertAdjacentElement("afterbegin", divElem);
+        },
+    });
+    addFunctionMeta({ title: "cloneNode - клонирование элемента", func: function () {
+            codeWrapperClone_1 = codeWrapper_3.cloneNode(false);
+            return codeWrapperClone_1;
+        },
+    });
+    addFunctionMeta({ title: "remove - удаление из DOM",
+        warning: "Элемент удаляется только из DOM, если была ссылка на него, то он остается в памяти", func: function () { return codeWrapper_3.remove(); },
+    });
+    addFunctionMeta({ title: "DocumentFragment - обертка, которая удаляется при вставке, т. е. не имеет тега, а используется как контейнер", func: function () {
+            var fragment = new DocumentFragment();
+            fragment.append(codeWrapperClone_1);
+            document.body.append(fragment);
+        },
+    });
+    addFunctionMeta({ title: "appendChild - как append, но возвращает вставленный элемент",
+        warning: "аналогично appendChild работают: prepandChild, insertBefore, insertAfter, replaceChild, removeChild", func: function () { return codeWrapperClone_1.appendChild(span_1); },
+    });
+}
+// Стили и классы 
+if (1) {
     // addFunctionMeta({ title: "",
     //     func: () => ,
     // });
@@ -84,6 +193,27 @@ if (1) {
     //     func: () => ,
     // });
 }
+// interface IHostedField {
+//     name: string; 
+// };
+// function _get<T>(obj: any, path: string, defaultValue: T): T {
+//     return _.get<any, string, T>(obj, path, defaultValue);
+// }
+// // let hostedFields0: IHostedField[] = this.hostedFields.fields; // Возможна ошибка - см. 1)
+// let hostedFields1: IHostedField[] = ('hostedFields' in this && 'fields' in this.hostedFields) ? this.hostedFields.fields : {}; // Возможна ошибка, см. 2)
+// let hostedFields2: IHostedField[] = _.get(this, 'hostedFields.fields', {}); // Возможна ошибка, см. 2)
+// let hostedFields3: IHostedField[] = _.get(this, 'hostedFields.fields', [{}]);  // Возможна ошибка, см. 3)
+// let hostedFields4: IHostedField[] = _.get<any, string, IHostedField[]>(this, 'hostedFields.fields', []); // Вроде бы все хорошо, решены  проблемы 1,2,3))), но см. следующий пример
+// let hostedFields5: IHostedField[] = _.get<any, string, IHostedField>(this, 'hostedFields.fields', {name: ""}); // Возможна ошибка, см. 4)
+// let hostedFields6: IHostedField[] = _get<IHostedField[]>(this, 'code-wrapper', [{name: ''}]); // Решены все проблемыЖ 1,2,3,4)))).
+// // console.log(hostedFields0);   
+// console.log(hostedFields1);
+// console.log(hostedFields2);
+// console.log(hostedFields6);
+// 1) нет проверки на существования поля this.hostedFields - м/б undefined.
+// 2) Пустой объект {} не соответствует типу переменной IHostedField[]
+// 3) Пустой объект на соответствует интерфейсу IHostedField. 
+// 4) Тип значения по умолчанию IHostedField не соответствует типу переменной IHostedField[]. 
 function addFunctionMeta(funcMeta) {
     funcsMeta.push(funcMeta);
 }
@@ -99,7 +229,7 @@ function addFunctionMeta(funcMeta) {
         // codeWrapper.append(nodeDList);
         // nodeDList.innerHTML = '<dl><dt>' + funcMeta.title + '</dt><dd>' + funcMeta.func + '</dd>';
         if (funcMeta.title) {
-            console.info(funcMeta.title);
+            console.warn(funcMeta.title);
         }
         if (funcMeta.warning) {
             console.error(funcMeta.warning);
@@ -110,13 +240,12 @@ function addFunctionMeta(funcMeta) {
         if (result instanceof EventTarget) {
             console.dir(result);
         }
-        else if (result.length && result[0] instanceof EventTarget) {
+        else if ((result === null || result === void 0 ? void 0 : result.length) && result[0] instanceof EventTarget) {
             console.dir(result);
         }
         else {
             console.log(result);
         }
-        console.log("=================================");
     });
 })();
 //# sourceMappingURL=main.js.map

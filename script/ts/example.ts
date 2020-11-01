@@ -184,7 +184,7 @@ let log = (obj: any = '') => console.log(obj);
         if ( "fly" in pet && typeof(pet.fly) == 'function' ) pet.fly();
         if ( "swim" in pet && typeof(pet.swim) == 'function' ) pet.swim();
 
-        // Проверка оператором ... in ..., чеез сужение false
+        // Проверка оператором ... in ..., через сужение false
         // Это бы работало, если бы мы не усложнили классы, добавив поля
         // if ( "fly" in pet && typeof(pet.fly) == 'function' ) pet.fly()
         // else pet.swim();
