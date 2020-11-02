@@ -316,6 +316,33 @@ if (1) {
 // // console.log(class1.Name);
 // console.log(class2.Name);
 
+// class Class3 {
+    
+//     constructor  (private name: string) {
+//         this.name = name;
+//     }
+
+//     set Name(value: string) {
+//         this.name = value;
+//     }
+
+//     // get Name() {
+//         // throw new Error("Публичный геттер недоступен");
+//     // }
+
+// }
+
+// let class3 = new Class3("Name 1");
+
+// console.log(class3.Name);
+
+// let x:number = +('0' + 'x' + 'A');
+// // do {
+// //     x = + '1' + '0'
+// // } while 
+// console.log(x--);
+
+ 
 function addFunctionMeta(funcMeta: FunctionMetaType): void {
     funcsMeta.push(funcMeta);
 }
