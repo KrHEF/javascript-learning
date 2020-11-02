@@ -258,6 +258,7 @@ if (1) {
     //     func: () => ,
     // });
  }
+
 // interface IHostedField {
 //     name: string; 
 // };
@@ -286,7 +287,34 @@ if (1) {
 // 4) Тип значения по умолчанию IHostedField не соответствует типу переменной IHostedField[]. 
 
 
+// class Class1 {
+    
+//     constructor (public name: string) {}
 
+//     get Name() {
+//         return this.name;
+//     }
+
+//     getName() {
+//         return this.Name;
+//     }
+// }
+
+// class Class2 extends Class1 {
+
+//     constructor (name: string, public country: string) {
+//         super(name);
+//     }
+// }
+
+// function factory<T>(): T {
+//     return new T();
+// }
+ 
+// // let class1 = factory<Class1>("name1");
+// let class2 = new Class2("name2", "country1");
+// // console.log(class1.Name);
+// console.log(class2.Name);
 
 function addFunctionMeta(funcMeta: FunctionMetaType): void {
     funcsMeta.push(funcMeta);

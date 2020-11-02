@@ -1,4 +1,17 @@
 'use strict';
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 var funcsMeta = [];
 // Манипулирование DOM
 if (0) {
@@ -214,6 +227,38 @@ if (1) {
 // 2) Пустой объект {} не соответствует типу переменной IHostedField[]
 // 3) Пустой объект на соответствует интерфейсу IHostedField. 
 // 4) Тип значения по умолчанию IHostedField не соответствует типу переменной IHostedField[]. 
+var Class1 = /** @class */ (function () {
+    function Class1(name) {
+        this.name = name;
+    }
+    Object.defineProperty(Class1.prototype, "Name", {
+        get: function () {
+            return this.name;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Class1.prototype.getName = function () {
+        return this.Name;
+    };
+    return Class1;
+}());
+var Class2 = /** @class */ (function (_super) {
+    __extends(Class2, _super);
+    function Class2(name, country) {
+        var _this = _super.call(this, name) || this;
+        _this.country = country;
+        return _this;
+    }
+    return Class2;
+}(Class1));
+function factory() {
+    return new T();
+}
+// let class1 = factory<Class1>("name1");
+var class2 = new Class2("name2", "country1");
+// console.log(class1.Name);
+console.log(class2.Name);
 function addFunctionMeta(funcMeta) {
     funcsMeta.push(funcMeta);
 }
