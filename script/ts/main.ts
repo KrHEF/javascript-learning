@@ -250,6 +250,45 @@ if (0) {
 }
 
 // Стили и классы 
+if (0) {
+    const codeWrapper: HTMLElement = document.querySelector("#code-wrapper");
+
+    addFunctionMeta({ title: "Вся строка с названиями класса elem.className",
+        func: () => codeWrapper.className += " custom" ,
+    });
+    addFunctionMeta({ title: "Специальный объект с методами доступа к классам elem.classList",
+        warning: "Доступные методы: add, remove, toggle, contains",
+        func: () => {
+            codeWrapper.classList.add("ef");
+            return codeWrapper.classList.contains("ef");
+        },
+    });
+    addFunctionMeta({ title: "Задание стиля элемента через объект elem.style",
+        warning: "Для свойства из нескольких слов используется camelCase",
+        func: () => { 
+            codeWrapper.style.backgroundColor = "red";
+            codeWrapper.style.height = "1vh";
+            return codeWrapper.style;
+        },
+    });
+    addFunctionMeta({ title: "Очистка стиля через elem.style.prop = \"\"",
+        func: () => {
+            codeWrapper.style.backgroundColor = "";
+            return codeWrapper.style;
+        },
+    });
+    addFunctionMeta({ title: "Задание нескольких стилей строкой через elem.style.cssText",
+        warning: "Удаляет все существующие стили в атрибуте style",
+        func: () => { 
+            codeWrapper.style.cssText = "background-color: yellow; width: 25vw; height: 2vh;"
+        },
+    });
+    addFunctionMeta({ title: "Получение наследуемых стилей через elem.getComputedStyle",
+        warning: "Функция возвращает окончательные значение в виде вычисленных числовых значений.",
+        func: () => getComputedStyle(codeWrapper),
+    });
+ }
+
 if (1) {
     // addFunctionMeta({ title: "",
     //     func: () => ,
@@ -257,7 +296,10 @@ if (1) {
     // addFunctionMeta({ title: "",
     //     func: () => ,
     // });
- }
+    // addFunctionMeta({ title: "",
+    //     func: () => ,
+    // });
+}
 
 // interface IHostedField {
 //     name: string; 
