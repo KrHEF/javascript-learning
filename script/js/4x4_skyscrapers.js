@@ -1,12 +1,22 @@
 function solvePuzzle (clues) {
-    if ( !Grid.validateSize(clues.length) ) { throw new Error('Wrong grid size'); }
+    if ( !Grid.validateSize(clues.length) ) { 
+      console.error("Wrong grid size!");
+      return []; 
+    }
     
     const grid = new Grid(clues);
     grid.calculate();
-    console.log(grid);
-  //   console.log( grid.HaveSolution );
-  //   console.log( Cell._numbers );
+
+    if ( !grid.HaveSolution ) {
+      let bruteForce = new BruteForce(grid);
+      bruteForce.start();
+    }
     
+    if ( !grid.HaveSolution ) {
+      console.error("Решение не найдено, выведено промежуточное решение:");
+      console.log(grid);
+    }
+
     return grid.toString();
   }
   
@@ -36,6 +46,10 @@ class Cell {
 
   get AvailableNumber() {
     return (this._availableNumbers.size === 1) ? this._availableNumbers.values()[0] : 0;
+  }
+
+  static get NumberMin() {
+    return 1;
   }
 
   static get NumberMax() { 
@@ -68,11 +82,11 @@ class CellInGrid extends Cell {
   constructor(rowIndex, colIndex) {
     super();
     
-    this._restrictions = {}
-    this._rowIndex = rowIndex;
+    this._restriction = {}
     this._colIndex = colIndex;
-    this._curRowCells = [];
-    this._curColCells = [];
+    this._rowIndex = rowIndex;
+    this._colCells = [];
+    this._rowCells = [];
   }
 
   get RowIndex() {
@@ -83,7 +97,157 @@ class CellInGrid extends Cell {
     return this._colIndex;
   }
 
+  get ColCells() {
+    return this._colCells;
+  }
 
+  get RowCells() {
+    return this._rowCells;
+  }  
+
+  /**
+   * Установка соседей по строкам и колонкам
+   * @param {[[]]} rows Массив строк
+   * @param {[[]]} cols Массив колонок
+   */
+  setSiblings(rows, cols) {
+    this._colCells = cols[this._colIndex];
+    this._rowCells = rows[this._rowIndex];
+  }
+}
+
+class RestrictionCell {
+  
+  constructor(number, rowStartIndex, rowEndIndex, colStartIndex, colEndIndex) {
+    this._number = number;
+    this._rowStartIndex = rowStartIndex;
+    this._rowEndIndex = rowEndIndex;
+    this._colStartIndex = colStartIndex;
+    this._colEndIndex = colEndIndex;
+  }
+
+  get Number() {
+    return this._number;
+  }
+
+  get RowStartIndex() {
+    return this._rowStartIndex;
+  }
+  get RowEndIndex() {
+    return this._rowEndIndex;
+  }
+  
+  get ColStartIndex() {
+    return this._colStartIndex;
+  }
+  get ColEndIndex() {
+    return this._colEndIndex;
+  }
+
+  get isRow() {
+    return this._rowStartIndex === this._rowEndIndex;
+  }
+
+  get isColumn() {
+    return this._colStartIndex === this._colEndIndex;
+  }
+
+}
+class Restriction {
+
+  constructor(clues, size) {
+    this._cols = [ [] ];
+    this._rows = [ [] ];
+    this._clues = [];
+
+    this._init(clues, size)
+  }
+
+  get Clues() {
+    return this._clues;
+  }
+
+  checkRestrictionByCell(cell) {
+    return this._checkRestriction(cell.ColCells)
+        && this._checkRestriction(cell.RowCells);
+  }
+
+  checkColRestriction(cells) {
+    return this._checkRestriction(cells);
+  }
+
+  checkRowRestriction(cells) {
+    return this._checkRestriction(cells);
+  }
+
+  toString() { 
+    return this._clues.map( (cell) => cell.toString() ); 
+  }
+
+  _init(clues, size) {
+    const up = clues.slice(0, size),
+          right = clues.slice(size, size * 2),
+          down = clues.slice(size * 2, size * 3).reverse(),
+          left = clues.slice(size * 3, size * 4).reverse();
+    this._cols = [up, down];
+    this._rows = [left, right];
+
+    this._clues = clues.map( (clue, index) => {
+      let rowIndex0 = 0, rowIndex1 = 0, colIndex0 = 0, colIndex1 = 0;
+      
+      if (index < size) {
+        rowIndex0 = 0;
+        rowIndex1 = size - 1;
+        colIndex0 = colIndex1 = index;
+      } else if (index < size * 2) {
+        colIndex0 = size - 1;
+        colIndex1 = 0;
+        rowIndex0 = rowIndex1 = index % size;
+      } else if (index < size * 3) {
+        rowIndex0 = size - 1;
+        rowIndex1 = 0;
+        colIndex0 = colIndex1 = size - index % size - 1;
+      } else if (index < size * 4) {
+        colIndex0 = 0;
+        colIndex1 = size - 1;
+        rowIndex0 = rowIndex1 = size - index % size - 1;
+      } else {
+        console.error("Превышен лимит Ограничений");
+      }
+
+      const cell = new RestrictionCell(clue, rowIndex0, rowIndex1, colIndex0, colIndex1);
+      return cell;
+    } );
+    
+  }
+
+  _checkRestriction(cells) {
+    let result0 = 1,
+        result1 = 1;
+
+    for (let i0 = 0; i0 < cells.length; i0++) {
+      if (!cells[i0].Number) { return true; }
+
+      const i1 = cells.length - i0;
+      const number0 = (!i0) ? 0 : cells[i0-1].Number,
+            number1 = (!i0) ? 0 : cells[i1].Number;
+      if ( number0 < cells[i0].Number) { result0++ }
+      if ( number1 < cells[i1-1].Number) { result1++ }
+    }
+    
+    let limit0 = 0,
+        limit1 = 0, //this._clues[cells[cells.length - 1].RowIndex][cells[cells.length - 1].ColIndex].Number;
+        restriction = [];
+
+    if (cells[0].RowIndex === cells[cells.length - 1].RowIndex) {
+      limit0 = this._rows[0].Number;
+      limit1 = this._rows[1].Number;
+    } else if (cells[0].ColIndex === cells[cells.length - 1].ColIndex) {
+      limit0 = this._cols[0].Number;
+      limit1 = this._cols[1].Number;
+    }
+    return ( !limit0 || number0 === limit0 ) && ( !limit1 || number1 === limit1 );
+  }
 
 }
 
@@ -94,11 +258,10 @@ class Grid {
    * @param {number[]} clues 
    */
   constructor(clues) {
-    this._clues = clues;
     this._size = Math.floor(clues.length / 4);
-    this._restrictions = {};
-    this._rows = [];
-    this._cols = [];
+    this._restriction = new Restriction(clues, this._size);
+    this._rows = [ [] ];
+    this._cols = [ [] ];
     this._cells = [];
     this._availableCellForNumbers = [];
     this._failThread = false;
@@ -106,90 +269,98 @@ class Grid {
     this._init();
   }  
 
-  get HasSolution() {
+  get HaveSolution() {
     return this._rows.every( (row) => row.every( (cell) => cell.HaveNumber) );
   }
   
   static validateSize(length) {
     return !(length % 4);
   }
-
+  
   calculate() {
-    this._findMaxNumberNearBorder();
+    this._findNumbersByRestriction();
     this._findNumberFromAvailable();
-    this._findFullLine();
-    this._findNumberFromAvailable();
+  }
+
+  copy() {
+    // let gridCopy = {};
+    // Object.assign(gridCopy, this);
+    // return (gridCopy);
+  }
+
+  toString() { 
+    return this._rows.map( (row) => row.map( (cell) => cell.toString() ) ); 
   }
 
   _init() {
-      this._setCluesObjectBySize();
-      this._setEmptyCellsBySize();
-      this._setAvailableCellsForNumbers();
-  }
-
-  _setCluesObjectBySize() {
-    this._restrictions = {
-      up:    this._clues.slice(0, this._size),
-      right: this._clues.slice(this._size, this._size * 2),
-      down:  this._clues.slice(this._size * 2, this._size * 3).reverse(),
-      left:  this._clues.slice(this._size * 3, this._size * 4).reverse(),
-    }
-  }
-
-  _setEmptyCellsBySize() {
     Cell.NumbersCount = this._size;
+    this._createEmptyCells();
+    this._createDependencies();
+  }
 
+  _createEmptyCells() {
     for (let row = 0; row < this._size; row++) {
-      this._rows[row] = [];
       for (let col = 0; col < this._size; col++) {
-        const cell = new CellInGrid(row, col);
-        this._rows[row][col] = cell
-        this._cells.push(cell);
+        this._cells.push( new CellInGrid(row, col) );
       }
-    }
-
-    this._cols = this._rows.map((row, rowIndex) => row.map((cell, colIndex) => this._rows[colIndex][rowIndex]));
-  }
-
-  _setAvailableCellsForNumbers() {
-    for (let i = 1; i <= Cell.NumberMax; i++) {
-      this._availableCellForNumbers[i] = new Set();
-        this._rows.forEach( (row) => row.forEach( (cell) => this._availableCellForNumbers[i].add(cell) ) );
     }
   }
 
   /**
-   * Поиск максимального числа около границы
-   * (когда в подсказке стоит 1)
+   * Метод создаёт массивы:
+   * - строк
+   * - колонок
+   * - ссылку на соседей по строкам и колонкам
+   * - доступных ячеек для каждой цифры
    */
-  _findMaxNumberNearBorder() {
-    const findMaxNumber = (clue, rowIndex, colIndex) => {
-      if (clue === 1) {
-        this._setNumberToCellByIndexes(Cell.NumberMax, rowIndex, colIndex);
+  _createDependencies() {
+    this._cells.forEach( (cell) => {
+
+      if ( !this._rows[cell.RowIndex] ) {
+        this._rows[cell.RowIndex] = [];
       }
-    }
-    
-    this._restrictions.up.forEach( (clue, index) => findMaxNumber(clue, 0, index));
-    this._restrictions.right.forEach( (clue, index) => findMaxNumber(clue, index, -1));
-    this._restrictions.down.forEach( (clue, index) => findMaxNumber(clue, -1, index));
-    this._restrictions.left.forEach( (clue, index) => findMaxNumber(clue, index, 0));
+      this._rows[cell.RowIndex][cell.ColIndex] = cell;
+      
+      if ( !this._cols[cell.ColIndex] ) {
+        this._cols[cell.ColIndex] = [];
+      }
+      this._cols[cell.ColIndex][cell.RowIndex] = cell;
+      
+      cell.setSiblings(this._rows, this._cols);
+
+      for (let i = Cell.NumberMin; i <= Cell.NumberMax; i++) {
+        if ( !this._availableCellForNumbers[i] ) {
+          this._availableCellForNumbers[i] = new Set();
+        }
+        this._availableCellForNumbers[i].add(cell);
+      }
+    });
   }
 
   /**
-   * Поиска полного ряда чисел
-   * (когда в подсказке стоит максимальное число )
+   * Поиск чисел по ограничениям
    */
-  _findFullLine() {
-    const findMaxClue = (clue, line) => {
-      if (clue === Cell.NumberMax) {
-        line.forEach( (cell, index) => this._setNumberToCell(index + 1, cell));
+  _findNumbersByRestriction() {
+    this._restriction.Clues.forEach( (clue) => {
+      if (clue.Number === 1) {
+        this._setNumberToCellByIndexes(Cell.NumberMax, clue.RowStartIndex, clue.ColStartIndex);
       }
-    }
-    
-    this._restrictions.up.forEach( (clue, index)    => findMaxClue(clue, this._cols[index]));
-    this._restrictions.right.forEach( (clue, index) => findMaxClue(clue, this._rows[index]));
-    this._restrictions.down.forEach( (clue, index)  => findMaxClue(clue, this._cols[index]));
-    this._restrictions.left.forEach( (clue, index)  => findMaxClue(clue, this._rows[index]));
+      if (clue.Number === Cell.NumberMax) {
+        let line = [];
+        if (clue.isRow) {
+          line = this._rows[clue.RowStartIndex];
+        } else if (clue.isColumn) {
+          line = this._cols[clue.ColStartIndex];
+        } else {
+          console.error("Ошибка получения строк и колонок!");
+        }
+        if ( clue.ColStartIndex > clue.ColEndIndex || clue.RowStartIndex > clue.RowEndIndex ) {
+          line.reverse();
+        }
+
+        line.forEach( (cell, index) => this._setNumberToCell(Cell.NumberMin + index, cell));
+      }
+    });
   }
 
   _findNumberFromAvailable() {
@@ -243,7 +414,9 @@ class Grid {
     this._removeAvailableNumberFromRow(cell.RowIndex, number)
     this._removeAvailableNumberFromColumn(cell.ColIndex, number)
 
-    return true;
+    const result = this._restriction.checkRestrictionByCell(cell);
+    console.log(`[${cell.RowIndex}, ${cell.ColIndex}] <= ${number} : ${result}`);
+    return result;
   }
   
   _removeAvailableNumberFromRow(index, number) {
@@ -262,7 +435,32 @@ class Grid {
     });
   }
 
+  _startBruteForce() {
+    // let cells = this._cells.filter( (cell) => !cell.HaveNumber );
+    // cells.sort( (a , b) => a.AvailableNumbersCount - b.AvailableNumbersCount );
+
+  }
+
+}
+
+class BruteForce {
+
+  constructor( grid ) {
+    this._grid = grid;
+    this._gridCopy = grid.copy();
+    console.log(this._gridCopy);
+  }
+
+  start() {
+    
+    
+  }
+
   _stopThread() {
+
+  }
+
+  _commit() {
 
   }
 
@@ -270,12 +468,7 @@ class Grid {
 
   }
 
-  toString() { 
-    return this._rows.map( (row) => row.map( (cell) => cell.toString() ) ); 
-  }
-
 }
-
 
 const clues = [2, 2, 1, 3,
 // const clues = [2, 2, 1, 4,
