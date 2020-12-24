@@ -11,8 +11,7 @@ function solvePuzzle (clues) {
 
     if ( !grid.HaveSolution ) {
       console.time('Brute force');
-      let bruteForce = new BruteForce(grid);
-      bruteForce.start();
+      grid.bruteForce();
       console.timeEnd('Brute force');
     }
     
@@ -24,10 +23,13 @@ function solvePuzzle (clues) {
     return grid.toString();
   }
   
-  
 class Skyscraper {
   // static _levels;
   
+  /**
+   * 
+   * @param {number|Skyscraper} param 
+   */
   constructor(param) {
     // this._level;
     // this._availableLevels;
@@ -66,8 +68,12 @@ class Skyscraper {
     this._availableLevels.clear();
   }
   
-  get HaveNumber() { 
+  get HaveLevel() { 
     return !!this._level 
+  }
+
+  get AvailableLevels() {
+    return Array.from(this._availableLevels);
   }
 
   get AvailableLevelsCount() {
@@ -75,23 +81,7 @@ class Skyscraper {
   }
 
   get AvailableLevel() {
-    return (this.AvailableLevelsCount === 1) ? this._availableLevels.values()[0] : 0;
-  }
-
-  /**
-   * Установить следующее доступное число
-   * и удалить его из доступных.
-   * Метод нужен для перебора.
-   * @returns {boolean} Возвращает успешность получения следующего значения: 
-   * true - если значение установлено, 
-   * false - если устанавливать больше нечего.
-   */
-  setNextAvailableLevel() {
-    console.warn("Переделать!");
-    if (!this.AvailableLevelsCount) { return false; }
-    this._level = this._availableLevels[0];
-    this.removeAvailableLevel(this._level);
-    return true;
+    return (this.AvailableLevelsCount === 1) ? Array.from(this._availableLevels)[0] : 0;
   }
 
   haveLevelInAvailable(level) {
@@ -137,6 +127,9 @@ class Cell {
   get Skyscraper() {
     return this._skyscraper;
   }
+  set Skyscraper(value) {
+    this._skyscraper = value;
+  }
 
   get RowIndex() {
     return this._rowIndex;
@@ -169,7 +162,7 @@ class Restriction {
   }
 
   canCheck() {
-    return this._count && this._cells.every( (cell) => cell.Skyscraper.HaveNumber );
+    return this._count && this._cells.every( (cell) => cell.Skyscraper.HaveLevel );
   }
 
   check() {
@@ -178,8 +171,12 @@ class Restriction {
     this._cells.reduce( (prevCell, cell, index) => {
       const level = cell.Skyscraper.Level,
             prevLevel = (!index) ? 0 : prevCell.Skyscraper.Level;
-      if ( prevLevel < level) { result++ }
-      return cell;
+      if ( prevLevel < level) { 
+        result++;
+        return cell;
+      } else {
+        return prevCell;
+      }
     });
 
     return this._count === result;
@@ -199,11 +196,13 @@ class Grid {
     this._cells = [];
     this._restrictions = [];
 
+    this._bruteForceStack = [];
+
     this._init(clues);
   }  
 
   get HaveSolution() {
-    return this._cells.every( (cell) => cell.HaveNumber);
+    return this._cells.every( (cell) => cell.Skyscraper.HaveLevel && this._checkRestrictionsByCell(cell) );
   }
 
   static validateSize(length) {
@@ -213,6 +212,10 @@ class Grid {
   calculate() {
     this._calculateByRestriction();
     this._calculateFromAvailable();
+  }
+
+  bruteForce(){
+    this._findNext();
   }
 
   toString() { 
@@ -307,7 +310,8 @@ class Grid {
       // или удалить макс.небоскреб из доступных
       if (restriction.VisibleCount === 1) {
         this._setLevelToCell(Skyscraper.LevelMax, restriction.Cells[0]);    
-      } else {
+      } 
+      if (restriction.VisibleCount > 1) {
         this._removeAvailableLevelForCell(Skyscraper.LevelMax, restriction.Cells[0]);
       }
 
@@ -333,7 +337,7 @@ class Grid {
     while (findLevel) {
       findLevel = false;
 
-      // Проверка на 1 доступное число в ячейках
+      // Проверка на 1 доступное число в ячейке среди доступных
       this._cells.forEach( (cell) => {
         const level = cell.AvailableLevel;
         if (level) {
@@ -371,7 +375,7 @@ class Grid {
 
   _setLevelToCell(level, cell) {
     const skyscraper = cell.Skyscraper;
-    if (skyscraper.HaveNumber) {
+    if (skyscraper.HaveLevel) {
       return skyscraper.Level === level;
     }
      
@@ -399,49 +403,73 @@ class Grid {
   _removeAvailableLevelForCell(level, cell) {
     cell.Skyscraper.removeAvailableLevel(level);
   }
-}
 
-class BruteForce {
+  _findNext() {
+    const cell = this._getNextCell();
+    if (!cell) { return false; }
 
-  constructor( grid ) {
-    // this._grid = grid;
-    // this._gridCopy = grid.copy();
-    // console.log(this._gridCopy);
-  }
+    const levels = cell.Skyscraper.AvailableLevels.slice();
+    if (!levels.length) { return false; }
 
-  _startBruteForce() {
-    // let cells = this._cells.filter( (cell) => !cell.HaveNumber );
-    // cells.sort( (a , b) => a.AvailableLevelsCount - b.AvailableLevelsCount );
+    let result = false;
 
-  }
+    levels.forEach( (level) => {
+      if (!result) {
+        this._backup();
 
-  start() {
+        if ( this._setLevelToCell(level, cell) ) {
+          this._calculateFromAvailable();
+          result = this.HaveSolution;
+          result = result || this._findNext();
+        } 
+        
+        if (!result) {
+          this._rollback();
+        }
+      }
+    });
     
-    
+    return result;
   }
 
-  _stopThread() {
-
+  _getNextCell() {
+    const cells = this._getAllEmptyCells();
+    return (cells.length) ? cells[0] : null;
   }
 
-  _commit() {
+  _getAllEmptyCells() {
+    return this._cells.filter( (cell) => !cell.Skyscraper.HaveLevel )
+                      .sort( (cellA, cellB) => cellA.Skyscraper.AvailableLevelsCount 
+                                             - cellB.Skyscraper.AvailableLevelsCount );
+  }
 
+  _backup() {
+    const cells = this._getAllEmptyCells(),
+          map = new Map();
+
+    this._bruteForceStack.push(map);
+
+    cells.forEach( (cell) => map.set(cell, new Skyscraper(cell.Skyscraper)) );
   }
 
   _rollback() {
-
+    const map = this._bruteForceStack.pop();
+    map.forEach( (copySkyscraper, cell) => cell.Skyscraper = copySkyscraper );
   }
-
 }
 
 // const clues = [2, 2, 1, 4,
-const clues = [2, 2, 1, 3,
+let clues = [2, 2, 1, 3,
         2, 2, 3, 1,
         1, 2, 2, 3,
         3, 2, 1, 3];
-const expected = [[1, 3, 4, 2],
-           [4, 2, 1, 3],
-           [3, 4, 2, 1],
-           [2, 1, 3, 4]];
-const actual = solvePuzzle(clues);
+let actual = solvePuzzle(clues);
+console.log(actual);
+
+clues = [0, 0, 1, 2,
+  0, 2, 0, 0,
+  0, 3, 0, 0,
+  0, 1, 0, 0];
+
+actual = solvePuzzle(clues);
 console.log(actual);
