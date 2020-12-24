@@ -5,15 +5,15 @@ function solvePuzzle (clues) {
     }
     
     const grid = new Grid(clues);
-    grid.calculate();
+    // grid.calculate();
 
     if ( !grid.HaveSolution ) {
-      let bruteForce = new BruteForce(grid);
-      bruteForce.start();
+      // let bruteForce = new BruteForce(grid);
+      // bruteForce.start();
     }
     
     if ( !grid.HaveSolution ) {
-      console.error("Решение не найдено, выведено промежуточное решение:");
+      console.error("No solution, see temp grid:");
       console.log(grid);
     }
 
@@ -21,72 +21,114 @@ function solvePuzzle (clues) {
   }
   
   
-class Cell {
-  // static _numbers;
+class Skyscraper {
+  // static _levels;
   
-  constructor() {
-    this._number = 0;
-    this._availableNumbers = new Set(Cell._numbers);
-  }
-  
-  get Number() { 
-    return this._number; 
-  }
-  set Number(number) { 
-    this._number = (number > 0 && number <= Cell.NumberMax) ? number : 0; 
-  }
-  
-  get HaveNumber() { 
-    return !!this._number 
+  constructor(param) {
+    // this._level;
+    // this._availableLevels;
+
+    if (typeof(param) === 'number') {
+      this._create(param);
+    } else if (param instanceof Skyscraper) {
+      this._clone(param);
+    } else {
+      console.error("WTF? Only type Number of Skyscraper for clone")
+    }
   }
 
-  get AvailableNumbersCount() {
-    return this._availableNumbers.size;
+  static get NoLevel() {
+    return 0;
   }
 
-  get AvailableNumber() {
-    return (this._availableNumbers.size === 1) ? this._availableNumbers.values()[0] : 0;
-  }
-
-  static get NumberMin() {
+  static get LevelMin() {
     return 1;
   }
 
-  static get NumberMax() { 
-    return Cell._numbers[Cell._numbers.length - 1]; 
+  static get LevelMax() { 
+    return Skyscraper._levels[Skyscraper._levels.length - 1]; 
   }
 
-  static get NumbersCount() {
-    return Cell._numbers.length;
-  }
-  static set NumbersCount(number) { 
-    Cell._numbers = [];
-    for (let i = 1; i <= number; i++) {
-      Cell._numbers.push(i); 
-    } 
-    Cell._numbers.sort(); 
+  static get LevelsCount() {
+    return Skyscraper._levels.length;
   }
 
-  removeAvailableNumber(number) {
-    this._availableNumbers.delete(number);
+  
+  get Level() { 
+    return this._level; 
+  }
+  set Level(value) { 
+    this._level = (value > 0 && value <= Skyscraper.LevelMax) ? value : Skyscraper.NoLevel; 
+  }
+  
+  get HaveNumber() { 
+    return !!this._level 
+  }
+
+  get AvailableLevelsCount() {
+    return this._availableLevels.size;
+  }
+
+  get AvailableNumber() {
+    return (this.AvailableLevelsCount === 1) ? this._availableLevels.values()[0] : 0;
+  }
+
+  _create(levelsCount) {
+    if (!Skyscraper._levels) {
+      Skyscraper._levels = [];
+      for (let i = 0; i < levelsCount; i++) {
+        Skyscraper._levels.push( i + Skyscraper.LevelMin ); 
+      } 
+      Skyscraper._levels.sort();   
+    }
+
+    this._level = Skyscraper.NoLevel;
+    this._availableLevels = new Set(Skyscraper._levels);
+  }
+
+  _clone(skyscraper) {
+    this._level = skyscraper._level;
+    this._availableLevels = new Set(skyscraper._availableLevels);
+  }
+
+
+  /**
+   * Установить следующее доступное число
+   * и удалить его из доступных.
+   * Метод нужен для перебора.
+   * @returns {boolean} Возвращает успешность получения следующего значения: 
+   * true - если значение установлено, 
+   * false - если устанавливать больше нечего.
+   */
+  setNextAvailableLevel() {
+    if (!this.AvailableLevelsCount) { return false; }
+    this._level = this._availableLevels[0];
+    this.removeAvailableLevel(this._level);
+    return true;
+  }
+
+  removeAvailableLevel(value) {
+    this._availableLevels.delete(value);
   }
   
   toString() {
-    return this.Number;
+    return this.Level;
   }
 
 }
   
-class CellInGrid extends Cell {
+class Cell {
 
-  constructor(rowIndex, colIndex) {
-    super();
-    
-    this._restriction = {}
+  constructor(rowIndex, colIndex, skyscraper) {
+    this._skyscraper = skyscraper;
     this._colIndex = colIndex;
     this._rowIndex = rowIndex;
     this._colCells = [];
     this._rowCells = [];
+  }
+
+  get Skyscraper() {
+    return this._skyscraper;
   }
 
   get RowIndex() {
@@ -107,19 +149,19 @@ class CellInGrid extends Cell {
 
   /**
    * Установка соседей по строкам и колонкам
-   * @param {[[]]} rows Массив строк
-   * @param {[[]]} cols Массив колонок
+   * @param {Cells[]} rowCells Массив ячеек в текущей строке
+   * @param {Cells[]} colCells Массив ячеек в текущей колонке
    */
-  setSiblings(rows, cols) {
-    this._colCells = cols[this._colIndex];
-    this._rowCells = rows[this._rowIndex];
+  setSiblings(rowCells, colCells) {
+    this._colCells = colCells;
+    this._rowCells = rowCells;
   }
 }
 
 class RestrictionCell {
   
   constructor(number, rowStartIndex, rowEndIndex, colStartIndex, colEndIndex) {
-    this._number = number;
+    this._level = number;
     this._rowStartIndex = rowStartIndex;
     this._rowEndIndex = rowEndIndex;
     this._colStartIndex = colStartIndex;
@@ -127,7 +169,7 @@ class RestrictionCell {
   }
 
   get Number() {
-    return this._number;
+    return this._level;
   }
 
   get RowStartIndex() {
@@ -263,8 +305,7 @@ class Grid {
     this._rows = [ [] ];
     this._cols = [ [] ];
     this._cells = [];
-    this._availableCellForNumbers = [];
-    this._failThread = false;
+    this._availableCellForLevels = [];
 
     this._init();
   }  
@@ -282,26 +323,20 @@ class Grid {
     this._findNumberFromAvailable();
   }
 
-  copy() {
-    // let gridCopy = {};
-    // Object.assign(gridCopy, this);
-    // return (gridCopy);
-  }
-
   toString() { 
-    return this._rows.map( (row) => row.map( (cell) => cell.toString() ) ); 
+    return this._rows.map( (row) => row.map( (cell) => cell.Skyscraper.toString() ) ); 
   }
 
   _init() {
-    Cell.NumbersCount = this._size;
-    this._createEmptyCells();
+    this._createSkyscrapers();
     this._createDependencies();
   }
 
-  _createEmptyCells() {
+  _createSkyscrapers() {
     for (let row = 0; row < this._size; row++) {
       for (let col = 0; col < this._size; col++) {
-        this._cells.push( new CellInGrid(row, col) );
+        const skyscraper = new Skyscraper(this._size);
+        this._cells.push( new Cell(row, col, skyscraper) );
       }
     }
   }
@@ -311,7 +346,7 @@ class Grid {
    * - строк
    * - колонок
    * - ссылку на соседей по строкам и колонкам
-   * - доступных ячеек для каждой цифры
+   * - доступных ячеек для каждого уровня
    */
   _createDependencies() {
     this._cells.forEach( (cell) => {
@@ -319,20 +354,19 @@ class Grid {
       if ( !this._rows[cell.RowIndex] ) {
         this._rows[cell.RowIndex] = [];
       }
-      this._rows[cell.RowIndex][cell.ColIndex] = cell;
-      
       if ( !this._cols[cell.ColIndex] ) {
         this._cols[cell.ColIndex] = [];
       }
+      this._rows[cell.RowIndex][cell.ColIndex] = cell;
       this._cols[cell.ColIndex][cell.RowIndex] = cell;
-      
-      cell.setSiblings(this._rows, this._cols);
 
-      for (let i = Cell.NumberMin; i <= Cell.NumberMax; i++) {
-        if ( !this._availableCellForNumbers[i] ) {
-          this._availableCellForNumbers[i] = new Set();
+      cell.setSiblings(this._rows[cell.RowIndex], this._cols[cell.ColIndex]);
+
+      for (let i = Skyscraper.LevelMin; i <= Skyscraper.LevelMax; i++) {
+        if ( !this._availableCellForLevels[i] ) {
+          this._availableCellForLevels[i] = new Set();
         }
-        this._availableCellForNumbers[i].add(cell);
+        this._availableCellForLevels[i].add(cell);
       }
     });
   }
@@ -343,9 +377,9 @@ class Grid {
   _findNumbersByRestriction() {
     this._restriction.Clues.forEach( (clue) => {
       if (clue.Number === 1) {
-        this._setNumberToCellByIndexes(Cell.NumberMax, clue.RowStartIndex, clue.ColStartIndex);
+        this._setNumberToCellByIndexes(Skyscraper.LevelMax, clue.RowStartIndex, clue.ColStartIndex);
       }
-      if (clue.Number === Cell.NumberMax) {
+      if (clue.Number === Skyscraper.LevelMax) {
         let line = [];
         if (clue.isRow) {
           line = this._rows[clue.RowStartIndex];
@@ -358,7 +392,7 @@ class Grid {
           line.reverse();
         }
 
-        line.forEach( (cell, index) => this._setNumberToCell(Cell.NumberMin + index, cell));
+        line.forEach( (cell, index) => this._setNumberToCell(Skyscraper.LevelMin + index, cell));
       }
     });
   }
@@ -381,7 +415,7 @@ class Grid {
       } ));
 
       // Проверка на 1 доступное место под число
-      this._availableCellForNumbers.forEach( (availableCells, number) => {
+      this._availableCellForLevels.forEach( (availableCells, number) => {
         if (availableCells.size === 0) { return false; }
         if (availableCells.size === 1) {
           availableCells.forEach( (cell) => {
@@ -395,8 +429,8 @@ class Grid {
   }
 
   _setNumberToCellByIndexes(number, rowIndex, colIndex) {
-    rowIndex = (rowIndex < 0) ? Cell.NumbersCount + rowIndex : rowIndex;
-    colIndex = (colIndex < 0) ? Cell.NumbersCount + colIndex : colIndex;
+    rowIndex = (rowIndex < 0) ? Skyscraper.LevelsCount + rowIndex : rowIndex;
+    colIndex = (colIndex < 0) ? Skyscraper.LevelsCount + colIndex : colIndex;
 
     const cell = this._rows[rowIndex][colIndex];
 
@@ -409,7 +443,7 @@ class Grid {
     }
      
     cell.Number = number;
-    this._availableCellForNumbers[number].delete(cell);
+    this._availableCellForLevels[number].delete(cell);
     
     this._removeAvailableNumberFromRow(cell.RowIndex, number)
     this._removeAvailableNumberFromColumn(cell.ColIndex, number)
@@ -422,22 +456,22 @@ class Grid {
   _removeAvailableNumberFromRow(index, number) {
     const row = this._rows[index];
     row.forEach( (cell) => {
-      cell.removeAvailableNumber(number);
-      this._availableCellForNumbers[number].delete(cell);
+      cell.removeAvailableLevel(number);
+      this._availableCellForLevels[number].delete(cell);
     });
   }
 
   _removeAvailableNumberFromColumn(index, number) {
     const col = this._cols[index];
     col.forEach( (cell) => {
-      cell.removeAvailableNumber(number);
-      this._availableCellForNumbers[number].delete(cell);
+      cell.removeAvailableLevel(number);
+      this._availableCellForLevels[number].delete(cell);
     });
   }
 
   _startBruteForce() {
     // let cells = this._cells.filter( (cell) => !cell.HaveNumber );
-    // cells.sort( (a , b) => a.AvailableNumbersCount - b.AvailableNumbersCount );
+    // cells.sort( (a , b) => a.AvailableLevelsCount - b.AvailableLevelsCount );
 
   }
 
