@@ -5,7 +5,7 @@ function solvePuzzle (clues) {
     }
     
     const grid = new Grid(clues);
-    // grid.calculate();
+    grid.calculate();
 
     if ( !grid.HaveSolution ) {
       // let bruteForce = new BruteForce(grid);
@@ -33,7 +33,7 @@ class Skyscraper {
     } else if (param instanceof Skyscraper) {
       this._clone(param);
     } else {
-      console.error("WTF? Only type Number of Skyscraper for clone")
+      console.error("WTF? Only type Number or Skyscraper for clone")
     }
   }
 
@@ -69,7 +69,7 @@ class Skyscraper {
     return this._availableLevels.size;
   }
 
-  get AvailableNumber() {
+  get AvailableLevel() {
     return (this.AvailableLevelsCount === 1) ? this._availableLevels.values()[0] : 0;
   }
 
@@ -123,8 +123,6 @@ class Cell {
     this._skyscraper = skyscraper;
     this._colIndex = colIndex;
     this._rowIndex = rowIndex;
-    this._colCells = [];
-    this._rowCells = [];
   }
 
   get Skyscraper() {
@@ -139,158 +137,44 @@ class Cell {
     return this._colIndex;
   }
 
-  get ColCells() {
-    return this._colCells;
-  }
-
-  get RowCells() {
-    return this._rowCells;
-  }  
-
-  /**
-   * Установка соседей по строкам и колонкам
-   * @param {Cells[]} rowCells Массив ячеек в текущей строке
-   * @param {Cells[]} colCells Массив ячеек в текущей колонке
-   */
-  setSiblings(rowCells, colCells) {
-    this._colCells = colCells;
-    this._rowCells = rowCells;
-  }
 }
 
-class RestrictionCell {
-  
-  constructor(number, rowStartIndex, rowEndIndex, colStartIndex, colEndIndex) {
-    this._level = number;
-    this._rowStartIndex = rowStartIndex;
-    this._rowEndIndex = rowEndIndex;
-    this._colStartIndex = colStartIndex;
-    this._colEndIndex = colEndIndex;
-  }
-
-  get Number() {
-    return this._level;
-  }
-
-  get RowStartIndex() {
-    return this._rowStartIndex;
-  }
-  get RowEndIndex() {
-    return this._rowEndIndex;
-  }
-  
-  get ColStartIndex() {
-    return this._colStartIndex;
-  }
-  get ColEndIndex() {
-    return this._colEndIndex;
-  }
-
-  get isRow() {
-    return this._rowStartIndex === this._rowEndIndex;
-  }
-
-  get isColumn() {
-    return this._colStartIndex === this._colEndIndex;
-  }
-
-}
 class Restriction {
 
-  constructor(clues, size) {
-    this._cols = [ [] ];
-    this._rows = [ [] ];
-    this._clues = [];
-
-    this._init(clues, size)
+  /**
+   * Create new instance of class Restriction
+   * @param {number} visibleSkyscrapersCount 
+   * @param {Cell[]} sortCells 
+   */
+  constructor(visibleCount, sortCells) {
+    this._count = visibleCount;
+    this._cells = sortCells;
   }
 
-  get Clues() {
-    return this._clues;
+  get VisibleCount() {
+    return this._count;
   }
 
-  checkRestrictionByCell(cell) {
-    return this._checkRestriction(cell.ColCells)
-        && this._checkRestriction(cell.RowCells);
+  get Cells() {
+    return this._cells;
   }
 
-  checkColRestriction(cells) {
-    return this._checkRestriction(cells);
+  canCheck() {
+    return this._count && this._cells.every( (cell) => cell.Skyscraper.HaveNumber );
   }
 
-  checkRowRestriction(cells) {
-    return this._checkRestriction(cells);
-  }
+  check() {
+    let result = 1;
 
-  toString() { 
-    return this._clues.map( (cell) => cell.toString() ); 
-  }
-
-  _init(clues, size) {
-    const up = clues.slice(0, size),
-          right = clues.slice(size, size * 2),
-          down = clues.slice(size * 2, size * 3).reverse(),
-          left = clues.slice(size * 3, size * 4).reverse();
-    this._cols = [up, down];
-    this._rows = [left, right];
-
-    this._clues = clues.map( (clue, index) => {
-      let rowIndex0 = 0, rowIndex1 = 0, colIndex0 = 0, colIndex1 = 0;
-      
-      if (index < size) {
-        rowIndex0 = 0;
-        rowIndex1 = size - 1;
-        colIndex0 = colIndex1 = index;
-      } else if (index < size * 2) {
-        colIndex0 = size - 1;
-        colIndex1 = 0;
-        rowIndex0 = rowIndex1 = index % size;
-      } else if (index < size * 3) {
-        rowIndex0 = size - 1;
-        rowIndex1 = 0;
-        colIndex0 = colIndex1 = size - index % size - 1;
-      } else if (index < size * 4) {
-        colIndex0 = 0;
-        colIndex1 = size - 1;
-        rowIndex0 = rowIndex1 = size - index % size - 1;
-      } else {
-        console.error("Превышен лимит Ограничений");
-      }
-
-      const cell = new RestrictionCell(clue, rowIndex0, rowIndex1, colIndex0, colIndex1);
+    this._cells.reduce( (prevCell, cell, index) => {
+      const level = cell.Skyscraper.Level,
+            prevLevel = (!index) ? 0 : prevCell.Skyscraper.Level;
+      if ( prevLevel < level) { result++ }
       return cell;
-    } );
-    
+    });
+
+    return this._count === result;
   }
-
-  _checkRestriction(cells) {
-    let result0 = 1,
-        result1 = 1;
-
-    for (let i0 = 0; i0 < cells.length; i0++) {
-      if (!cells[i0].Number) { return true; }
-
-      const i1 = cells.length - i0;
-      const number0 = (!i0) ? 0 : cells[i0-1].Number,
-            number1 = (!i0) ? 0 : cells[i1].Number;
-      if ( number0 < cells[i0].Number) { result0++ }
-      if ( number1 < cells[i1-1].Number) { result1++ }
-    }
-    
-    let limit0 = 0,
-        limit1 = 0, //this._clues[cells[cells.length - 1].RowIndex][cells[cells.length - 1].ColIndex].Number;
-        restriction = [];
-
-    if (cells[0].RowIndex === cells[cells.length - 1].RowIndex) {
-      limit0 = this._rows[0].Number;
-      limit1 = this._rows[1].Number;
-    } else if (cells[0].ColIndex === cells[cells.length - 1].ColIndex) {
-      limit0 = this._cols[0].Number;
-      limit1 = this._cols[1].Number;
-    }
-    return ( !limit0 || number0 === limit0 ) && ( !limit1 || number1 === limit1 );
-  }
-
 }
 
 class Grid {
@@ -301,35 +185,36 @@ class Grid {
    */
   constructor(clues) {
     this._size = Math.floor(clues.length / 4);
-    this._restriction = new Restriction(clues, this._size);
     this._rows = [ [] ];
     this._cols = [ [] ];
     this._cells = [];
-    this._availableCellForLevels = [];
+    this._availableCellsForLevels = [];
+    this._restrictions = [];
 
-    this._init();
+    this._init(clues);
   }  
 
   get HaveSolution() {
-    return this._rows.every( (row) => row.every( (cell) => cell.HaveNumber) );
+    return this._cells.every( (cell) => cell.HaveNumber);
   }
-  
+
   static validateSize(length) {
     return !(length % 4);
   }
   
   calculate() {
-    this._findNumbersByRestriction();
-    this._findNumberFromAvailable();
+    this._calculateByRestriction();
+    this._calculateFromAvailable();
   }
 
   toString() { 
     return this._rows.map( (row) => row.map( (cell) => cell.Skyscraper.toString() ) ); 
   }
 
-  _init() {
+  _init(clues) {
     this._createSkyscrapers();
     this._createDependencies();
+    this._createRestrictions(clues);
   }
 
   _createSkyscrapers() {
@@ -345,7 +230,6 @@ class Grid {
    * Метод создаёт массивы:
    * - строк
    * - колонок
-   * - ссылку на соседей по строкам и колонкам
    * - доступных ячеек для каждого уровня
    */
   _createDependencies() {
@@ -360,121 +244,154 @@ class Grid {
       this._rows[cell.RowIndex][cell.ColIndex] = cell;
       this._cols[cell.ColIndex][cell.RowIndex] = cell;
 
-      cell.setSiblings(this._rows[cell.RowIndex], this._cols[cell.ColIndex]);
-
-      for (let i = Skyscraper.LevelMin; i <= Skyscraper.LevelMax; i++) {
-        if ( !this._availableCellForLevels[i] ) {
-          this._availableCellForLevels[i] = new Set();
-        }
-        this._availableCellForLevels[i].add(cell);
-      }
+      this._addCellToAllLevels(cell);
     });
+  }
+
+  _addCellToAllLevels(cell) {
+    for (let lvl = Skyscraper.LevelMin; lvl <= Skyscraper.LevelMax; lvl++) {
+      if ( !this._availableCellsForLevels[lvl] ) {
+        this._availableCellsForLevels[lvl] = new Set();
+      }
+      this._availableCellsForLevels[lvl].add(cell);
+    }
+  }
+
+  _createRestrictions(clues) {
+
+    clues.forEach( (clue, index) => {
+      let calcIndex = 0,
+          cells = [];
+      
+      if (index < this._size) {
+        calcIndex = index;
+        cells = this._cols[calcIndex]
+      } else if (index < 2 * this._size) {
+        calcIndex = index % this._size;
+        cells = this._rows[calcIndex].slice().reverse();
+      } else if (index < 3 * this._size) {
+        calcIndex = this._size - index % this._size - 1;
+        cells = this._cols[calcIndex].slice().reverse();
+      } else if (index < 4 * this._size) {
+        calcIndex = this._size - index % this._size - 1;
+        cells = this._rows[calcIndex];
+      } else {
+        console.error("Overflow restrictions");
+      }
+
+      this._restrictions.push( new Restriction(clue, cells) );
+    });
+  }
+
+  _getRestrictionsByCell(cell) {
+    const restrictions = [],
+          colIndex = cell.ColIndex,
+          rowIndex = cell.RowIndex;
+
+    restrictions.push( this._restrictions[colIndex] );
+    restrictions.push( this._restrictions[ rowIndex + this._size ] );
+    restrictions.push( this._restrictions[ 3 * this._size - 1 - colIndex ] );
+    restrictions.push( this._restrictions[ 4 * this._size - 1 - rowIndex ] );
+
+    return restrictions;
+  }
+
+  _checkRestrictionsByCell(cell) {
+    const restrictions = this._getRestrictionsByCell(cell);
+    return restrictions.every( (restriction) => !restriction.canCheck() || restriction.check() );
   }
 
   /**
    * Поиск чисел по ограничениям
    */
-  _findNumbersByRestriction() {
-    this._restriction.Clues.forEach( (clue) => {
-      if (clue.Number === 1) {
-        this._setNumberToCellByIndexes(Skyscraper.LevelMax, clue.RowStartIndex, clue.ColStartIndex);
+  _calculateByRestriction() {
+    this._restrictions.forEach( (restriction) => {
+      // Найти 1 в подсказке и проставить макс. небоскреб,
+      // или удалить макс.небоскреб из доступных
+      if (restriction.VisibleCount === 1) {
+        this._setLevelToCell(Skyscraper.LevelMax, restriction.Cells[0]);    
+      } else {
+        this._removeAvailableLevelForCell(Skyscraper.LevelMax, restriction.Cells[0]);
       }
-      if (clue.Number === Skyscraper.LevelMax) {
-        let line = [];
-        if (clue.isRow) {
-          line = this._rows[clue.RowStartIndex];
-        } else if (clue.isColumn) {
-          line = this._cols[clue.ColStartIndex];
-        } else {
-          console.error("Ошибка получения строк и колонок!");
-        }
-        if ( clue.ColStartIndex > clue.ColEndIndex || clue.RowStartIndex > clue.RowEndIndex ) {
-          line.reverse();
-        }
 
-        line.forEach( (cell, index) => this._setNumberToCell(Skyscraper.LevelMin + index, cell));
+      // Найти 2 в подсказке
+      // и удалить у 2-го числа в ряду из доступных (макс. число - 1)
+      if (restriction.VisibleCount === 2) {
+        this._removeAvailableLevelForCell(Skyscraper.LevelMax - 1, restriction.Cells[1]);
+      }
+
+
+      // Найти максимальное число в подсказке 
+      // и проставить всю строку или колонку по порядку
+      if (restriction.VisibleCount === Skyscraper.LevelMax) {
+        const cells = restriction.Cells;
+        cells.forEach( (cell, index) => this._setLevelToCell(Skyscraper.LevelMin + index, cell));
       }
     });
   }
 
-  _findNumberFromAvailable() {
-    // let rowIndex = -1,
-        // colIndex = -1;
-      let findNumber = true;
+  _calculateFromAvailable() {
+    let findLevel = true;
 
-    while (findNumber) {
-      findNumber = false;
+    while (findLevel) {
+      findLevel = false;
 
-      // Проверка на 1 доступное число
-      this._rows.forEach( (row, rowIndex) => row.forEach( (cell) => {
-        const number = cell.AvailableNumber;
-        if (number) {
-          findNumber = true;
-          this._setNumberToCellByIndexes(number, rowIndex, colIndex);
-        }
-      } ));
-
-      // Проверка на 1 доступное место под число
-      this._availableCellForLevels.forEach( (availableCells, number) => {
-        if (availableCells.size === 0) { return false; }
-        if (availableCells.size === 1) {
-          availableCells.forEach( (cell) => {
-            findNumber = true;
-            this._setNumberToCellByIndexes(number, cell.RowIndex, cell.ColIndex);
-          });
+      // Проверка на 1 доступное число в ячейках
+      this._cells.forEach( (cell) => {
+        const level = cell.AvailableLevel;
+        if (level) {
+          findLevel = true;
+          this._setLevelToCell(level, cell);
         }
       });
 
+      // Проверка на 1 доступное место под число
+      this._availableCellsForLevels.forEach( (availableCellsForLevel, level) => {
+        if (availableCellsForLevel.size === 1) {
+          findLevel = true;
+          const cell = Array.from(availableCellsForLevel)[0];
+          this._setLevelToCell(level, cell);
+        }
+      });
     }       
   }
 
-  _setNumberToCellByIndexes(number, rowIndex, colIndex) {
-    rowIndex = (rowIndex < 0) ? Skyscraper.LevelsCount + rowIndex : rowIndex;
-    colIndex = (colIndex < 0) ? Skyscraper.LevelsCount + colIndex : colIndex;
-
-    const cell = this._rows[rowIndex][colIndex];
-
-    return this._setNumberToCell(number, cell);
-  }
-
-  _setNumberToCell(number, cell) {
-    if (cell.Number) {
-      return (cell.Number === number);
+  _setLevelToCell(level, cell) {
+    const skyscraper = cell.Skyscraper;
+    if (skyscraper.HaveNumber) {
+      return skyscraper.Level === level;
     }
      
-    cell.Number = number;
-    this._availableCellForLevels[number].delete(cell);
-    
-    this._removeAvailableNumberFromRow(cell.RowIndex, number)
-    this._removeAvailableNumberFromColumn(cell.ColIndex, number)
+    skyscraper.Level = level;
+    this._removeAvailableLevelByCell(level, cell);
 
-    const result = this._restriction.checkRestrictionByCell(cell);
-    console.log(`[${cell.RowIndex}, ${cell.ColIndex}] <= ${number} : ${result}`);
-    return result;
+    return this._checkRestrictionsByCell(cell);
   }
   
-  _removeAvailableNumberFromRow(index, number) {
+  _removeAvailableLevelByCell(level, cell) {
+    this._removeAvailableLevelFromRow(level, cell.RowIndex);
+    this._removeAvailableLevelFromColumn(level, cell.ColIndex);
+    this._removeCellFromAllAvailableLevels(cell);
+  }
+
+  _removeAvailableLevelFromRow(level, index) {
     const row = this._rows[index];
-    row.forEach( (cell) => {
-      cell.removeAvailableLevel(number);
-      this._availableCellForLevels[number].delete(cell);
-    });
+    row.forEach( (cell) => this._removeAvailableLevelForCell(level, cell) );
   }
 
-  _removeAvailableNumberFromColumn(index, number) {
+  _removeAvailableLevelFromColumn(level, index) {
     const col = this._cols[index];
-    col.forEach( (cell) => {
-      cell.removeAvailableLevel(number);
-      this._availableCellForLevels[number].delete(cell);
-    });
+    col.forEach( (cell) => this._removeAvailableLevelForCell(level, cell) );
   }
 
-  _startBruteForce() {
-    // let cells = this._cells.filter( (cell) => !cell.HaveNumber );
-    // cells.sort( (a , b) => a.AvailableLevelsCount - b.AvailableLevelsCount );
-
+  _removeAvailableLevelForCell(level, cell) {
+    cell.Skyscraper.removeAvailableLevel(level);
+    this._availableCellsForLevels[level].delete(cell);
   }
 
+  _removeCellFromAllAvailableLevels(cell) {
+    this._availableCellsForLevels.forEach( (availableCellsForLevel) => availableCellsForLevel.delete(cell) );
+  }
 }
 
 class BruteForce {
@@ -483,6 +400,12 @@ class BruteForce {
     this._grid = grid;
     this._gridCopy = grid.copy();
     console.log(this._gridCopy);
+  }
+
+  _startBruteForce() {
+    // let cells = this._cells.filter( (cell) => !cell.HaveNumber );
+    // cells.sort( (a , b) => a.AvailableLevelsCount - b.AvailableLevelsCount );
+
   }
 
   start() {
@@ -504,8 +427,8 @@ class BruteForce {
 
 }
 
-const clues = [2, 2, 1, 3,
 // const clues = [2, 2, 1, 4,
+const clues = [2, 2, 1, 3,
         2, 2, 3, 1,
         1, 2, 2, 3,
         3, 2, 1, 3];
