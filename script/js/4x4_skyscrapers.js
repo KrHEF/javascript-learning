@@ -3,17 +3,21 @@ function solvePuzzle (clues) {
       console.error("Wrong grid size!");
       return []; 
     }
-    
+
+    console.time('Calculate');
     const grid = new Grid(clues);
     grid.calculate();
+    console.timeEnd('Calculate');
 
     if ( !grid.HaveSolution ) {
-      // let bruteForce = new BruteForce(grid);
-      // bruteForce.start();
+      console.time('Brute force');
+      let bruteForce = new BruteForce(grid);
+      bruteForce.start();
+      console.timeEnd('Brute force');
     }
     
     if ( !grid.HaveSolution ) {
-      console.error("No solution, see temp grid:");
+      console.warn("No solution, see temp grid:");
       console.log(grid);
     }
 
@@ -400,9 +404,9 @@ class Grid {
 class BruteForce {
 
   constructor( grid ) {
-    this._grid = grid;
-    this._gridCopy = grid.copy();
-    console.log(this._gridCopy);
+    // this._grid = grid;
+    // this._gridCopy = grid.copy();
+    // console.log(this._gridCopy);
   }
 
   _startBruteForce() {
