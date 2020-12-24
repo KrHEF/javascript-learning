@@ -59,6 +59,7 @@ class Skyscraper {
   }
   set Level(value) { 
     this._level = (value > 0 && value <= Skyscraper.LevelMax) ? value : Skyscraper.NoLevel; 
+    this._availableLevels.clear();
   }
   
   get HaveNumber() { 
@@ -71,6 +72,34 @@ class Skyscraper {
 
   get AvailableLevel() {
     return (this.AvailableLevelsCount === 1) ? this._availableLevels.values()[0] : 0;
+  }
+
+  /**
+   * Установить следующее доступное число
+   * и удалить его из доступных.
+   * Метод нужен для перебора.
+   * @returns {boolean} Возвращает успешность получения следующего значения: 
+   * true - если значение установлено, 
+   * false - если устанавливать больше нечего.
+   */
+  setNextAvailableLevel() {
+    console.warn("Переделать!");
+    if (!this.AvailableLevelsCount) { return false; }
+    this._level = this._availableLevels[0];
+    this.removeAvailableLevel(this._level);
+    return true;
+  }
+
+  haveLevelInAvailable(level) {
+    return this._availableLevels.has(level);
+  }
+
+  removeAvailableLevel(value) {
+    this._availableLevels.delete(value);
+  }
+  
+  toString() {
+    return this.Level;
   }
 
   _create(levelsCount) {
@@ -89,30 +118,6 @@ class Skyscraper {
   _clone(skyscraper) {
     this._level = skyscraper._level;
     this._availableLevels = new Set(skyscraper._availableLevels);
-  }
-
-
-  /**
-   * Установить следующее доступное число
-   * и удалить его из доступных.
-   * Метод нужен для перебора.
-   * @returns {boolean} Возвращает успешность получения следующего значения: 
-   * true - если значение установлено, 
-   * false - если устанавливать больше нечего.
-   */
-  setNextAvailableLevel() {
-    if (!this.AvailableLevelsCount) { return false; }
-    this._level = this._availableLevels[0];
-    this.removeAvailableLevel(this._level);
-    return true;
-  }
-
-  removeAvailableLevel(value) {
-    this._availableLevels.delete(value);
-  }
-  
-  toString() {
-    return this.Level;
   }
 
 }
@@ -188,7 +193,6 @@ class Grid {
     this._rows = [ [] ];
     this._cols = [ [] ];
     this._cells = [];
-    this._availableCellsForLevels = [];
     this._restrictions = [];
 
     this._init(clues);
@@ -243,18 +247,7 @@ class Grid {
       }
       this._rows[cell.RowIndex][cell.ColIndex] = cell;
       this._cols[cell.ColIndex][cell.RowIndex] = cell;
-
-      this._addCellToAllLevels(cell);
     });
-  }
-
-  _addCellToAllLevels(cell) {
-    for (let lvl = Skyscraper.LevelMin; lvl <= Skyscraper.LevelMax; lvl++) {
-      if ( !this._availableCellsForLevels[lvl] ) {
-        this._availableCellsForLevels[lvl] = new Set();
-      }
-      this._availableCellsForLevels[lvl].add(cell);
-    }
   }
 
   _createRestrictions(clues) {
@@ -345,12 +338,28 @@ class Grid {
         }
       });
 
-      // Проверка на 1 доступное место под число
-      this._availableCellsForLevels.forEach( (availableCellsForLevel, level) => {
-        if (availableCellsForLevel.size === 1) {
-          findLevel = true;
-          const cell = Array.from(availableCellsForLevel)[0];
-          this._setLevelToCell(level, cell);
+
+      // Проверка на 1 доступное число в строке
+      this._rows.forEach( (row) => {
+        for (let level = Skyscraper.LevelMin; level <= Skyscraper.LevelMax; level++ ) {
+          const cells = row.filter( (cell) => cell.Skyscraper.haveLevelInAvailable(level) );
+          if (cells.length === 1) {
+            findLevel = true;
+            const cell = cells[0];
+            this._setLevelToCell(level, cell);
+          }
+        }
+      });
+
+      // Проверка на 1 доступное число в колонке
+      this._cols.forEach( (column) => {
+        for (let level = Skyscraper.LevelMin; level <= Skyscraper.LevelMax; level++ ) {
+          const cells = column.filter( (cell) => cell.Skyscraper.haveLevelInAvailable(level) );
+          if (cells.length === 1) {
+            findLevel = true;
+            const cell = cells[0];
+            this._setLevelToCell(level, cell);
+          }
         }
       });
     }       
@@ -371,7 +380,6 @@ class Grid {
   _removeAvailableLevelByCell(level, cell) {
     this._removeAvailableLevelFromRow(level, cell.RowIndex);
     this._removeAvailableLevelFromColumn(level, cell.ColIndex);
-    this._removeCellFromAllAvailableLevels(cell);
   }
 
   _removeAvailableLevelFromRow(level, index) {
@@ -386,11 +394,6 @@ class Grid {
 
   _removeAvailableLevelForCell(level, cell) {
     cell.Skyscraper.removeAvailableLevel(level);
-    this._availableCellsForLevels[level].delete(cell);
-  }
-
-  _removeCellFromAllAvailableLevels(cell) {
-    this._availableCellsForLevels.forEach( (availableCellsForLevel) => availableCellsForLevel.delete(cell) );
   }
 }
 
