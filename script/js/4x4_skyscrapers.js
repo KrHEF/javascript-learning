@@ -4,6 +4,7 @@ function solvePuzzle (clues) {
       return []; 
     }
 
+    console.time('Total');
     console.time('Calculate');
     const grid = new Grid(clues);
     grid.calculate();
@@ -14,6 +15,7 @@ function solvePuzzle (clues) {
       grid.bruteForce();
       console.timeEnd('Brute force');
     }
+    console.timeEnd('Total');
     
     if ( !grid.HaveSolution ) {
       console.warn("No solution, see temp grid:");
@@ -162,16 +164,14 @@ class Restriction {
   }
 
   canCheck() {
-    return this._count && this._cells.every( (cell) => cell.Skyscraper.HaveLevel );
+    return this._cells.every( (cell) => cell.Skyscraper.HaveLevel );
   }
 
   check() {
     let result = 1;
 
-    this._cells.reduce( (prevCell, cell, index) => {
-      const level = cell.Skyscraper.Level,
-            prevLevel = (!index) ? 0 : prevCell.Skyscraper.Level;
-      if ( prevLevel < level) { 
+    this._cells.reduce( (prevCell, cell) => {
+      if ( prevCell.Skyscraper.Level < cell.Skyscraper.Level) { 
         result++;
         return cell;
       } else {
@@ -194,7 +194,7 @@ class Grid {
     this._rows = [ [] ];
     this._cols = [ [] ];
     this._cells = [];
-    this._restrictions = [];
+    this._restrictions = new Map();
 
     this._bruteForceStack = [];
 
@@ -279,25 +279,32 @@ class Grid {
         console.error("Overflow restrictions");
       }
 
-      this._restrictions.push( new Restriction(clue, cells) );
+      if (clue) {  // Clue can be zero
+        this._restrictions.set(index, new Restriction(clue, cells) );
+      }
     });
   }
 
   _getRestrictionsByCell(cell) {
-    const restrictions = [],
-          colIndex = cell.ColIndex,
-          rowIndex = cell.RowIndex;
+    const indexes = [
+      cell.ColIndex,
+      cell.RowIndex + this._size,
+      3 * this._size - 1 - cell.ColIndex,
+      4 * this._size - 1 - cell.RowIndex
+    ],
+    restrictions = [];
 
-    restrictions.push( this._restrictions[colIndex] );
-    restrictions.push( this._restrictions[ rowIndex + this._size ] );
-    restrictions.push( this._restrictions[ 3 * this._size - 1 - colIndex ] );
-    restrictions.push( this._restrictions[ 4 * this._size - 1 - rowIndex ] );
-
+    indexes.forEach( (index) => {
+      const restriction = this._restrictions.get(index)
+      if (restriction) {
+        restrictions.push(restriction);
+      }
+    }, this );
     return restrictions;
   }
 
   _checkRestrictionsByCell(cell) {
-    const restrictions = this._getRestrictionsByCell(cell);
+    const restrictions = Array.from( this._getRestrictionsByCell(cell) );
     return restrictions.every( (restriction) => !restriction.canCheck() || restriction.check() );
   }
 
@@ -305,7 +312,7 @@ class Grid {
    * Поиск чисел по ограничениям
    */
   _calculateByRestriction() {
-    this._restrictions.forEach( (restriction) => {
+    this._restrictions.forEach( (restriction  ) => {
       // Найти 1 в подсказке и проставить макс. небоскреб,
       // или удалить макс.небоскреб из доступных
       if (restriction.VisibleCount === 1) {
@@ -458,7 +465,7 @@ class Grid {
   }
 }
 
-// const clues = [2, 2, 1, 4,
+// 3.89ms
 let clues = [ 2, 2, 1, 3,
               2, 2, 3, 1,
               1, 2, 2, 3,
@@ -466,6 +473,7 @@ let clues = [ 2, 2, 1, 3,
 let actual = solvePuzzle(clues);
 console.log(actual);
 
+// 4.52ms
 clues = [ 0, 0, 1, 2,
           0, 2, 0, 0,
           0, 3, 0, 0,
@@ -474,13 +482,14 @@ clues = [ 0, 0, 1, 2,
 actual = solvePuzzle(clues);
 console.log(actual);
 
+// 60ms
 clues = [ 3, 2, 2, 3, 2, 1,
           1, 2, 3, 3, 2, 2,
           5, 1, 2, 2, 4, 3,
           3, 2, 1, 2, 2, 4];
 
-// actual = solvePuzzle(clues);
-// console.log(actual);
+actual = solvePuzzle(clues);
+console.log(actual);
 
 clues = [ 0, 0, 0, 2, 2, 0,
           0, 0, 0, 6, 3, 0,
@@ -498,12 +507,20 @@ clues = [ 0, 3, 0, 5, 3, 4,
 // actual = solvePuzzle(clues);
 // console.log(actual);
 
-actual = solvePuzzle([7,0,0,0,2,2,3, 0,0,3,0,0,0,0, 3,0,3,0,0,5,0, 0,0,0,0,5,0,4]);
-console.log(actual);
+// actual = solvePuzzle([7,0,0,0,2,2,3, 0,0,3,0,0,0,0, 3,0,3,0,0,5,0, 0,0,0,0,5,0,4]);
+// console.log(actual);
 
-actual = solvePuzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1]);
-console.log(actual);
+// actual = solvePuzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1]);
+// console.log(actual);
 
 // for a _very_ hard puzzle, replace the last 7 values with zeroes
-actual = solvePuzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 0,0,0,0,0,0,0]);
-console.log(actual);
+// actual = solvePuzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 0,0,0,0,0,0,0]);
+// console.log(actual);
+
+
+// Calculate: 2.4189453125 ms
+// Brute force: 1.1279296875 ms
+// Calculate: 0.56005859375 ms
+// Brute force: 4.666015625 ms
+// Calculate: 0.51708984375 ms
+// Brute force: 47990.156982421875 ms
