@@ -16,6 +16,7 @@ function solvePuzzle (clues) {
       console.timeEnd('Brute force');
     }
     console.timeEnd('Total');
+    console.log(`Counter: ${grid.bruteForceCounter}`);
     
     if ( !grid.HaveSolution ) {
       console.warn("No solution, see temp grid:");
@@ -194,9 +195,10 @@ class Grid {
     this._rows = [ [] ];
     this._cols = [ [] ];
     this._cells = [];
-    this._restrictions = new Map();
+    this._restrictions = [];
 
     this._bruteForceStack = [];
+    this.bruteForceCounter = 0; 
 
     this._init(clues);
   }  
@@ -280,7 +282,7 @@ class Grid {
       }
 
       if (clue) {  // Clue can be zero
-        this._restrictions.set(index, new Restriction(clue, cells) );
+        this._restrictions[index] = new Restriction(clue, cells);
       }
     });
   }
@@ -295,7 +297,7 @@ class Grid {
     restrictions = [];
 
     indexes.forEach( (index) => {
-      const restriction = this._restrictions.get(index)
+      const restriction = this._restrictions[index];
       if (restriction) {
         restrictions.push(restriction);
       }
@@ -312,14 +314,27 @@ class Grid {
    * Поиск чисел по ограничениям
    */
   _calculateByRestriction() {
-    this._restrictions.forEach( (restriction  ) => {
-      // Найти 1 в подсказке и проставить макс. небоскреб,
-      // или удалить макс.небоскреб из доступных
-      if (restriction.VisibleCount === 1) {
-        this._setLevelToCell(Skyscraper.LevelMax, restriction.Cells[0]);    
-      } 
-      if (restriction.VisibleCount > 1) {
-        this._removeAvailableLevelForCell(Skyscraper.LevelMax, restriction.Cells[0]);
+
+    this._restrictions = this._restrictions.filter( (restriction) => {
+      switch (restriction.VisibleCount) {
+        case Skyscraper.LevelMin:
+          this._setLevelToCell(Skyscraper.LevelMax, restriction.Cells[0]);
+          return false;
+        case Skyscraper.LevelMax:
+          restriction.Cells.forEach( (cell, index) => this._setLevelToCell(Skyscraper.LevelMin + index, cell));
+          return false;
+        default:
+          return true;
+      }
+    });
+
+    this._restrictions.forEach( (restriction) => { 
+
+      const clue = restriction.VisibleCount;
+      for (let level = Skyscraper.LevelMax - (clue - 2); level <= Skyscraper.LevelMax; level++) {
+        for (let index = 0; index <= (clue - 2) - (Skyscraper.LevelMax - level); index++) {
+          this._removeAvailableLevelForCell(level, restriction.Cells[index]);
+        }
       }
 
       // Найти 2 в подсказке
@@ -327,15 +342,8 @@ class Grid {
       if (restriction.VisibleCount === 2) {
         this._removeAvailableLevelForCell(Skyscraper.LevelMax - 1, restriction.Cells[1]);
       }
-
-
-      // Найти максимальное число в подсказке 
-      // и проставить всю строку или колонку по порядку
-      if (restriction.VisibleCount === Skyscraper.LevelMax) {
-        const cells = restriction.Cells;
-        cells.forEach( (cell, index) => this._setLevelToCell(Skyscraper.LevelMin + index, cell));
-      }
     });
+
   }
 
   _calculateFromAvailable() {
@@ -416,27 +424,20 @@ class Grid {
     if (!cell) { return false; }
 
     const levels = cell.Skyscraper.AvailableLevels.slice();
-    if (!levels.length) { return false; }
+    for (const level of  levels) {
+      this.bruteForceCounter++;
+      this._backup();
 
-    let result = false;
-
-    levels.forEach( (level) => {
-      if (!result) {
-        this._backup();
-
-        if ( this._setLevelToCell(level, cell) ) {
-          this._calculateFromAvailable();
-          result = this.HaveSolution;
-          result = result || this._findNext();
-        } 
-        
-        if (!result) {
-          this._rollback();
-        }
-      }
-    });
+      if ( this._setLevelToCell(level, cell) ) {
+        this._calculateFromAvailable();
+        if (this.HaveSolution) { return true; }
+        if (this._findNext()) { return true; }
+      } 
+      
+      this._rollback();
+    }
     
-    return result;
+    return false;
   }
 
   _getNextCell() {
@@ -465,7 +466,11 @@ class Grid {
   }
 }
 
-// 3.89ms
+// 4ms
+// 6ms 1it // _restrictions: Map
+// 2ms     // _restrictions: []
+// 4ms     // forEach => for..of
+// 2ms     // remove level from available
 let clues = [ 2, 2, 1, 3,
               2, 2, 3, 1,
               1, 2, 2, 3,
@@ -473,7 +478,11 @@ let clues = [ 2, 2, 1, 3,
 let actual = solvePuzzle(clues);
 console.log(actual);
 
-// 4.52ms
+// 5ms 
+// 72ms 187it // _restrictions: Map
+// 5ms  11it  // _restrictions: []
+// 4ms        // forEach => for..of
+// 1ms  2it   // remove level from available
 clues = [ 0, 0, 1, 2,
           0, 2, 0, 0,
           0, 3, 0, 0,
@@ -482,7 +491,12 @@ clues = [ 0, 0, 1, 2,
 actual = solvePuzzle(clues);
 console.log(actual);
 
-// 60ms
+// 60s
+// 75s 1725106it //_restrictions: Map
+// 40s 930730it  //_restrictions: []
+// 38s           // forEach => for..of
+// 30s           // add return to brute force
+// 237ms 2206    // remove level from available
 clues = [ 3, 2, 2, 3, 2, 1,
           1, 2, 3, 3, 2, 2,
           5, 1, 2, 2, 4, 3,
@@ -496,16 +510,16 @@ clues = [ 0, 0, 0, 2, 2, 0,
           0, 4, 0, 0, 0, 0,
           4, 4, 0, 3, 0, 0];
 
-// actual = solvePuzzle(clues);
-// console.log(actual);
+actual = solvePuzzle(clues);
+console.log(actual);
 
 clues = [ 0, 3, 0, 5, 3, 4, 
           0, 0, 0, 0, 0, 1,
           0, 3, 0, 3, 2, 3,
           3, 2, 0, 3, 1, 0];
   
-// actual = solvePuzzle(clues);
-// console.log(actual);
+actual = solvePuzzle(clues);
+console.log(actual);
 
 // actual = solvePuzzle([7,0,0,0,2,2,3, 0,0,3,0,0,0,0, 3,0,3,0,0,5,0, 0,0,0,0,5,0,4]);
 // console.log(actual);
