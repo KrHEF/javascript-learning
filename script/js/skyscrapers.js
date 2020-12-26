@@ -109,8 +109,11 @@ class Cell {
 
 
   setLevel(level) {
-    if ( !this._skyscraper.setLevel(level) ) { return false; }
-    this._removeAvailableLevelForSibling(level);
+    if ( this._skyscraper.setLevel(level) ) {
+      this._removeAvailableLevelForSibling(level);
+      return true;
+    }
+    return false;
   }
 
   setSiblings(allCells) {
@@ -287,7 +290,7 @@ class Grid {
   }
 
   _checkRestrictionsByCell(cell) {
-    const restrictions = Array.from( this._getRestrictionsByCell(cell) );
+    const restrictions = this._getRestrictionsByCell(cell);
     return restrictions.every( (restriction) => !restriction.canCheck() || restriction.check() );
   }
 
@@ -370,9 +373,7 @@ class Grid {
   }
 
   _setCellLevel(level, cell) {
-    if ( cell.setLevel(level) ) { return false; }
-
-    return this._checkRestrictionsByCell(cell);
+    return cell.setLevel(level) ? this._checkRestrictionsByCell(cell) : false;
   }
   
   _findNext() {
@@ -397,11 +398,11 @@ class Grid {
   }
 
   _getNextCell() {
-    const cells = this._getAllEmptyCells();
+    const cells = this._getEmptyCells();
     return (cells.length) ? cells[0] : null;
   }
 
-  _getAllEmptyCells() {
+  _getEmptyCells() {
     return this._cells.filter( (cell) => !cell.Skyscraper.HaveLevel )
                       .sort( (cellA, cellB) => cellA.Skyscraper.AvailableLevelsCount 
                                              - cellB.Skyscraper.AvailableLevelsCount );
@@ -409,9 +410,9 @@ class Grid {
 
   _backup() {
     const map = new Map();
-    this._bruteForceStack.push(map);
-    this._getAllEmptyCells().forEach( (cell) => map.set(cell, cell.BackupObject) );
+    this._getEmptyCells().forEach( (cell) => map.set(cell, cell.BackupObject) );
     this._restrictions.forEach( (restriction) => map.set(restriction, restriction.BackupObject) );
+    this._bruteForceStack.push(map);
   }
 
   _rollback() {
