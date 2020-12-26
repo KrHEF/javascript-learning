@@ -5,15 +5,11 @@ function solvePuzzle (clues) {
     }
 
     console.time('Total');
-    console.time('Calculate');
     const grid = new Grid(clues);
     grid.calculate();
-    console.timeEnd('Calculate');
 
     if ( !grid.HaveSolution ) {
-      console.time('Brute force');
       grid.bruteForce();
-      console.timeEnd('Brute force');
     }
     console.timeEnd('Total');
     console.log(`Counter: ${grid.bruteForceCounter}`);
@@ -21,6 +17,7 @@ function solvePuzzle (clues) {
     if ( !grid.HaveSolution ) {
       console.warn("No solution, see temp grid:");
       console.log(grid);
+      console.log(grid.toString());
     }
 
     return grid.toString();
@@ -475,8 +472,7 @@ let clues = [ 2, 2, 1, 3,
               2, 2, 3, 1,
               1, 2, 2, 3,
               3, 2, 1, 3];
-let actual = solvePuzzle(clues);
-console.log(actual);
+solvePuzzle(clues);
 
 // 5ms 
 // 72ms 187it // _restrictions: Map
@@ -488,8 +484,7 @@ clues = [ 0, 0, 1, 2,
           0, 3, 0, 0,
           0, 1, 0, 0];
 
-actual = solvePuzzle(clues);
-console.log(actual);
+solvePuzzle(clues);
 
 // 60s
 // 75s 1725106it //_restrictions: Map
@@ -502,39 +497,25 @@ clues = [ 3, 2, 2, 3, 2, 1,
           5, 1, 2, 2, 4, 3,
           3, 2, 1, 2, 2, 4];
 
-actual = solvePuzzle(clues);
-console.log(actual);
+solvePuzzle(clues);
 
 clues = [ 0, 0, 0, 2, 2, 0,
           0, 0, 0, 6, 3, 0,
           0, 4, 0, 0, 0, 0,
           4, 4, 0, 3, 0, 0];
 
-actual = solvePuzzle(clues);
-console.log(actual);
+solvePuzzle(clues);
 
 clues = [ 0, 3, 0, 5, 3, 4, 
           0, 0, 0, 0, 0, 1,
           0, 3, 0, 3, 2, 3,
           3, 2, 0, 3, 1, 0];
   
-actual = solvePuzzle(clues);
-console.log(actual);
+solvePuzzle(clues);
 
-// actual = solvePuzzle([7,0,0,0,2,2,3, 0,0,3,0,0,0,0, 3,0,3,0,0,5,0, 0,0,0,0,5,0,4]);
-// console.log(actual);
+solvePuzzle([7,0,0,0,2,2,3, 0,0,3,0,0,0,0, 3,0,3,0,0,5,0, 0,0,0,0,5,0,4]);
 
-// actual = solvePuzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1]);
-// console.log(actual);
+solvePuzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1]);
 
 // for a _very_ hard puzzle, replace the last 7 values with zeroes
-// actual = solvePuzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 0,0,0,0,0,0,0]);
-// console.log(actual);
-
-
-// Calculate: 2.4189453125 ms
-// Brute force: 1.1279296875 ms
-// Calculate: 0.56005859375 ms
-// Brute force: 4.666015625 ms
-// Calculate: 0.51708984375 ms
-// Brute force: 47990.156982421875 ms
+solvePuzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 0,0,0,0,0,0,0]);
