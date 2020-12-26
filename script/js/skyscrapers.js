@@ -1,56 +1,43 @@
 function solvePuzzle (clues) {
-    if ( !Grid.validateSize(clues.length) ) { 
-      console.error("Wrong grid size!");
-      return []; 
-    }
+  if ( !Grid.validateSize(clues.length) ) { throw new Error("Wrong grid size!"); }
 
-    console.time('Total');
-    const grid = new Grid(clues);
-    grid.calculate();
+  const grid = new Grid(clues);
+  grid.calculate();
 
-    if ( !grid.HaveSolution ) {
-      grid.bruteForce();
-    }
-    console.timeEnd('Total');
-    console.log(`Counter: ${grid.debugBruteForceCounter}`);
-    
-    if ( !grid.HaveSolution ) {
-      console.warn("No solution, see temp grid:");
-      console.log(grid);
-    }
+  return (grid.HasSolution || grid.bruteForce()) ? grid.Result : [];
+}
 
-    console.log(grid.Result);
-    return grid.Result;
-  }
-  
 class Skyscraper {
   // static _levels: number[];
   
-  /**
-   * @param {number|Skyscraper} param 
-   */
-  constructor(param) {
-    this._level = Skyscraper.NO_LEVEL;
-    this._availableLevels = null;
-
-    if(param instanceof Skyscraper) {
-      this._clone(param);
-    } else {
-      this._create(param);
-    }
+  constructor(level = Skyscraper.NO_LEVEL, levels = Skyscraper._levels) {
+    this._level = level;
+    this._availableLevels = new Set(levels);
   }
 
   static get NO_LEVEL() { return 0; }
-  static get MinLevel() { return Skyscraper._levels[0]; }
-  static get MaxLevel() { return Skyscraper._levels[Skyscraper._levels.length - 1]; }
+  static get MinLevel() { return this._levels[0]; }
+  static get MaxLevel() { return this._levels[this._levels.length - 1]; }
+  static get Levels() { return this._levels }
+  static set Levels(size) {
+      this._levels = [];
+      for (let level = 1; level <= size; level++) {
+        this._levels.push(level); 
+      } 
+      this._levels.sort();   
+  }
   
   get Level() { return this._level; }
-  get HaveLevel() { return !!this._level; }
+  get HasLevel() { return !!this._level; }
   get AvailableLevels() { return Array.from(this._availableLevels); }
   get AvailableLevelsCount() { return this._availableLevels.size; }
 
+  static clone(skyscraper) {
+    return new Skyscraper(skyscraper._level, skyscraper._availableLevels);
+  }
+
   setLevel(level) {
-    if (this.HaveLevel) { return this._level === level; }
+    if (this.HasLevel) { return this._level === level; }
 
     if (level >= Skyscraper.MinLevel && level <= Skyscraper.MaxLevel) {
       this._level = level;
@@ -61,36 +48,19 @@ class Skyscraper {
     return false;
   }
 
-  haveAvailableLevel(level) {
+  hasAvailableLevel(level) {
     return this._availableLevels.has(level);
   }
 
   removeAvailableLevel(level) {
     this._availableLevels.delete(level);
   }
-  
-  _create(levelsCount) {
-    if ( !Skyscraper._levels || (Skyscraper._levels.length !== levelsCount) ) {
-      Skyscraper._levels = [];
-      for (let i = 1; i <= levelsCount; i++) {
-        Skyscraper._levels.push(i); 
-      } 
-      Skyscraper._levels.sort();   
-    }
-    this._availableLevels = new Set(Skyscraper._levels);
-  }
-
-  _clone(skyscraper) {
-    this._level = skyscraper._level;
-    this._availableLevels = new Set(skyscraper._availableLevels);
-  }
-
 }
   
 class Cell {
 
-  constructor(rowIndex, colIndex, skyscraper) {
-    this._skyscraper = skyscraper;
+  constructor(colIndex, rowIndex) {
+    this._skyscraper = new Skyscraper();
     this._colIndex = colIndex;
     this._rowIndex = rowIndex;
     this._siblingCells = [];
@@ -100,10 +70,22 @@ class Cell {
   set Skyscraper(value) { this._skyscraper = value; }
   get RowIndex() { return this._rowIndex; }
   get ColIndex() { return this._colIndex; }
-  get BackupObject() { return { _skyscraper: new Skyscraper(this._skyscraper) }; }
+  get HasSolution() { return this._skyscraper.HasLevel; }
+  get BackupObject() { return { _skyscraper: Skyscraper.clone(this._skyscraper) }; }
   set BackupObject(obj) { 
     if (!obj['_skyscraper']) { throw new Error("Rollback error"); }
     this._skyscraper = obj['_skyscraper']; 
+  }
+
+  static create(size) {
+    Skyscraper.Levels = size;
+
+    const cells = [];
+    for (let row = 0; row < size; row++)
+      for (let col = 0; col < size; col++)
+        cells.push( new Cell(col, row) );
+        
+    return cells;
   }
 
 
@@ -173,7 +155,7 @@ class Restriction {
   }
 
   canCheck() {
-    return this._cells.every( (cell) => cell.Skyscraper.HaveLevel );
+    return this._cells.every( (cell) => cell.Skyscraper.HasLevel );
   }
 
   check() {
@@ -212,8 +194,8 @@ class Grid {
     this._init(clues);
   }  
 
-  get HaveSolution() {
-    return this._cells.every( (cell) => cell.Skyscraper.HaveLevel && this._checkRestrictions(cell) );
+  get HasSolution() {
+    return this._cells.every( (cell) => cell.HasSolution && this._checkRestrictions(cell) );
   }
 
   get Result() { 
@@ -221,7 +203,7 @@ class Grid {
   }
 
   get EmptyCells() {
-    return this._cells.filter( (cell) => !cell.Skyscraper.HaveLevel )
+    return this._cells.filter( (cell) => !cell.Skyscraper.HasLevel )
                       .sort( (cellA, cellB) => cellA.Skyscraper.AvailableLevelsCount 
                                              - cellB.Skyscraper.AvailableLevelsCount );
   }
@@ -245,7 +227,7 @@ class Grid {
 
       if ( this._setCellLevel(level, cell) ) {
         this._calculateFromAvailable();
-        if (this.HaveSolution) { return true; }
+        if (this.HasSolution) { return true; }
         if (this.bruteForce()) { return true; }
       } 
       
@@ -256,18 +238,9 @@ class Grid {
   }
 
   _init(clues) {
-    this._createSkyscrapers();
+    this._cells = Cell.create(this._size);
     this._createDependencies();
     this._createRestrictions(clues);
-  }
-
-  _createSkyscrapers() {
-    for (let row = 0; row < this._size; row++) {
-      for (let col = 0; col < this._size; col++) {
-        const skyscraper = new Skyscraper(this._size);
-        this._cells.push( new Cell(row, col, skyscraper) );
-      }
-    }
   }
 
   /**
@@ -366,7 +339,7 @@ class Grid {
       // Проверка на 1 доступное число в строке
       this._rows.forEach( (row) => {
         for (let level = Skyscraper.MinLevel; level <= Skyscraper.MaxLevel; level++ ) {
-          const cells = row.filter( (cell) => cell.Skyscraper.haveAvailableLevel(level) );
+          const cells = row.filter( (cell) => cell.Skyscraper.hasAvailableLevel(level) );
           if (cells.length === 1) {
             findLevel = true;
             const cell = cells[0];
@@ -378,7 +351,7 @@ class Grid {
       // Проверка на 1 доступное число в колонке
       this._cols.forEach( (column) => {
         for (let level = Skyscraper.MinLevel; level <= Skyscraper.MaxLevel; level++ ) {
-          const cells = column.filter( (cell) => cell.Skyscraper.haveAvailableLevel(level) );
+          const cells = column.filter( (cell) => cell.Skyscraper.hasAvailableLevel(level) );
           if (cells.length === 1) {
             findLevel = true;
             const cell = cells[0];
@@ -411,22 +384,48 @@ class Grid {
     map.forEach( (value, obj) => obj["BackupObject"] = value );
   }
 }
+/************************************************************************* */
 
-solvePuzzle([2,2,1,3, 2,2,3,1, 1,2,2,3, 3,2,1,3]);
-solvePuzzle([0,0,1,2, 0,2,0,0, 0,3,0,0, 0,1,0,0]);
-solvePuzzle([3,2,2,3,2,1, 1,2,3,3,2,2, 5,1,2,2,4,3, 3,2,1,2,2,4]);
-solvePuzzle([0,0,0,2,2,0, 0,0,0,6,3,0, 0,4,0,0,0,0, 4,4,0,3,0,0]);
-solvePuzzle([0,3,0,5,3,4, 0,0,0,0,0,1, 0,3,0,3,2,3, 3,2,0,3,1,0]);
+function solvePuzzle2 (clues) {
+  if ( !Grid.validateSize(clues.length) ) { 
+    console.error("Wrong grid size!");
+    return []; 
+  }
+
+  console.time('Total');
+  const grid = new Grid(clues);
+  grid.calculate();
+
+  if ( !grid.HasSolution ) {
+    grid.bruteForce();
+  }
+  console.timeEnd('Total');
+  console.log(`Counter: ${grid.debugBruteForceCounter}`);
+  
+  if ( !grid.HasSolution ) {
+    console.warn("No solution, see temp grid:");
+    console.log(grid.Result);
+    console.log(grid);
+  }
+
+  return grid.Result;
+}
+
+solvePuzzle2([2,2,1,3, 2,2,3,1, 1,2,2,3, 3,2,1,3]);
+solvePuzzle2([0,0,1,2, 0,2,0,0, 0,3,0,0, 0,1,0,0]);
+solvePuzzle2([3,2,2,3,2,1, 1,2,3,3,2,2, 5,1,2,2,4,3, 3,2,1,2,2,4]);
+solvePuzzle2([0,0,0,2,2,0, 0,0,0,6,3,0, 0,4,0,0,0,0, 4,4,0,3,0,0]);
+solvePuzzle2([0,3,0,5,3,4, 0,0,0,0,0,1, 0,3,0,3,2,3, 3,2,0,3,1,0]);
   
 //1.0s 28452
 //1.0s 28234
-solvePuzzle([7,0,0,0,2,2,3, 0,0,3,0,0,0,0, 3,0,3,0,0,5,0, 0,0,0,0,5,0,4]);
+solvePuzzle2([7,0,0,0,2,2,3, 0,0,3,0,0,0,0, 3,0,3,0,0,5,0, 0,0,0,0,5,0,4]);
 
 // 1.8s 50117
 // 1.7s 50463
-solvePuzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1]);
+solvePuzzle2([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1]);
 
 // for a _very_ hard puzzle, replace the last 7 values with zeroes
 // 4.8s 137720
 // 5.0s 154721
-solvePuzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 0,0,0,0,0,0,0]);
+solvePuzzle2([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 0,0,0,0,0,0,0]);
