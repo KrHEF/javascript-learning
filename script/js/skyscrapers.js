@@ -154,22 +154,25 @@ class Restriction {
     return { cellsIndex,isRow, isReverse };
   }
 
-  canCheck() {
-    return this._cells.every( (cell) => cell.Skyscraper.HasLevel );
-  }
-
   check() {
     if (this._isChecked) { return true; }
 
-    let result = 1;
-    this._cells.reduce( (prevCell, cell) => {
-      if ( prevCell.Skyscraper.Level < cell.Skyscraper.Level) { 
+    let result = 0,
+        prevLevelMax = 0,
+        currLevel = 0;
+    for (let cell of this._cells) {
+      currLevel = cell.Skyscraper.Level;
+        
+      // Если натыкаемся на 0 ячейку, то проверим не превышает ли уже результат установленное ограничение      
+      if ( !currLevel ) { return result < this._count; } 
+
+      if (prevLevelMax < currLevel) {
         result++;
-        return cell;
-      } else {
-        return prevCell;
+        prevLevelMax = currLevel;
       }
-    });
+
+      if ( currLevel === Skyscraper.MaxLevel ) { break; }
+    }
 
     this._isChecked = (this._count === result);
     return this._isChecked;
@@ -267,17 +270,17 @@ class Grid {
   }
 
   _getRestrictionsIds(cell) {
-    return [cell.ColIndex,
-            cell.RowIndex + this._size,
-            3 * this._size - 1 - cell.ColIndex,
-            4 * this._size - 1 - cell.RowIndex];
+    return [cell.ColIndex,                        // up
+            cell.RowIndex + this._size,           // right
+            3 * this._size - 1 - cell.ColIndex,   // down
+            4 * this._size - 1 - cell.RowIndex];  // left
   }
 
   _checkRestrictions(cell) {
     const indexes = this._getRestrictionsIds(cell);
     return indexes.every( (index) => {
         const restriction = this._restrictions[index];
-        return !restriction || !restriction.canCheck() || restriction.check();
+        return !restriction || restriction.check();
     });
   }
 
@@ -395,21 +398,24 @@ function solvePuzzle2 (clues) {
   return grid.Result;
 }
 
-solvePuzzle2([2,2,1,3, 2,2,3,1, 1,2,2,3, 3,2,1,3]);
-solvePuzzle2([0,0,1,2, 0,2,0,0, 0,3,0,0, 0,1,0,0]);
-solvePuzzle2([3,2,2,3,2,1, 1,2,3,3,2,2, 5,1,2,2,4,3, 3,2,1,2,2,4]);
-solvePuzzle2([0,0,0,2,2,0, 0,0,0,6,3,0, 0,4,0,0,0,0, 4,4,0,3,0,0]);
-solvePuzzle2([0,3,0,5,3,4, 0,0,0,0,0,1, 0,3,0,3,2,3, 3,2,0,3,1,0]);
+// solvePuzzle2([2,2,1,3, 2,2,3,1, 1,2,2,3, 3,2,1,3]);
+// solvePuzzle2([0,0,1,2, 0,2,0,0, 0,3,0,0, 0,1,0,0]);
+// solvePuzzle2([3,2,2,3,2,1, 1,2,3,3,2,2, 5,1,2,2,4,3, 3,2,1,2,2,4]);
+// solvePuzzle2([0,0,0,2,2,0, 0,0,0,6,3,0, 0,4,0,0,0,0, 4,4,0,3,0,0]);
+// solvePuzzle2([0,3,0,5,3,4, 0,0,0,0,0,1, 0,3,0,3,2,3, 3,2,0,3,1,0]);
   
 //1.0s 28452
 //1.0s 28234
-solvePuzzle2([7,0,0,0,2,2,3, 0,0,3,0,0,0,0, 3,0,3,0,0,5,0, 0,0,0,0,5,0,4]);
+//0.3s 9930!
+// solvePuzzle2([7,0,0,0,2,2,3, 0,0,3,0,0,0,0, 3,0,3,0,0,5,0, 0,0,0,0,5,0,4]);
 
 // 1.8s 50117
 // 1.7s 50463
-solvePuzzle2([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1]);
+// 2.0s 48507!
+// solvePuzzle2([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1]);
 
 // for a _very_ hard puzzle, replace the last 7 values with zeroes
 // 4.8s 137720
 // 5.0s 154721
+// 6.8s 151337!
 solvePuzzle2([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 0,0,0,0,0,0,0]);
