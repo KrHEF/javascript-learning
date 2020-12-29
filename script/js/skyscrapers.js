@@ -205,32 +205,135 @@ class RestrictionRules {
 
   static set(restriction) {
     switch (restriction.VisibleCount) {
+      case Restriction.MinVisibleCount:
+        break;
       case Restriction.MinVisibleCount + 1:  // 2
         this._setRulesFor2(restriction);
+        break;
+      case Restriction.MaxVisibleCount - 1:  // Max - 1
+        this._setRulesForPreMax(restriction);
+        break;
+      case Restriction.MaxVisibleCount:
+        break;
+      default:
+        this._setRulesBarrier(restriction)  // others restrictions
         break;
     }
   }
 
-  /**
-   * @param {Restriction} restriction 
-   */
   static _setRulesFor2(restriction) {
     const cells = restriction.Cells, 
           size = cells.length;
 
     const index0 = 0;    // 1st
-    // 1 +6 0 0 0 0
-    cells[index0].addRules( (level) => 
-      (level === Skyscraper.MinLevel) ? cells[index0 + 1].setLevel(Skyscraper.MaxLevel) : true );
+    // (1) +6 0 0 0 0
+    cells[index0].addRules( (level) => (level === Skyscraper.MinLevel) ? cells[index0 + 1].setLevel(Skyscraper.MaxLevel) : true );
 
     const index2 = 2;        // 3d
-    // 0 +6 5 0 0 0
+    // 0 +6 (5) 0 0 0
     cells[index2].addRules( (level) => (level === (Skyscraper.MaxLevel - 1)) ?  cells[index2 - 1].setLevel(level) : true );
     
     const indexLast = size - 1;   // last position
-    // +5 0 0 0 0 6
+    // +5 0 0 0 0 (6)
     cells[indexLast].addRules( (level) => (level === Skyscraper.MaxLevel) ? cells[0].setLevel(Skyscraper.MaxLevel - 1) : true );
-        
+
+    //(a > 1) +n1:[<a] +n2:[<a]/6 +n3:[<a]/6 +n4:[<a]/6 6
+    const rule_A___Max_ = () => {
+      const level0 = cells[0].Skyscraper.Level;
+      if (level0 <= Skyscraper.MinLevel) { return true; }
+      let indexMax = this._findPosition(Skyscraper.MaxLevel, cells, 2);
+      if (indexMax < 2) { return true; }
+      
+      if ( (level0 === Skyscraper.MinLevel + 1) && (indexMax === 2)) {
+        return cells[1].setLevel(Skyscraper.MinLevel);
+      }
+
+      const noAvailableLevels = Skyscraper.Levels.slice(level0);
+      return cells.slice(1, indexMax).every( (cell) => {
+        noAvailableLevels.forEach( (level) => cell.removeAvailableLevel(level) ); 
+        return !cell.HasSolution || (cell.Skyscraper.Level < cells[0].Skyscraper.Level) 
+      });
+    }
+    cells[index0].addRules( (level) => level > 1 ? rule_A___Max_() : true );
+    cells.slice(1).forEach( (cell) => cell.addRules(rule_A___Max_) );
+  }
+
+  static _setRulesForPreMax(restriction) {
+    const cells = restriction.Cells, 
+          size = cells.length;
+
+    const indexPreLast = size - 2;
+    // e:[<d] d:[<c] c:[<b] b (6) 0
+    cells[indexPreLast].addRules( (level) => {
+      if (level !== Skyscraper.MaxLevel) { return true; }
+
+      const noAvailableLevels = Skyscraper.Levels.slice(Skyscraper.MinLevel + 1); // start with 3
+      return !!cells.slice(0, -1).reduce( (prevCell, currCell) => {
+        if (!prevCell) { return false; }
+        noAvailableLevels.forEach( (level) => prevCell.removeAvailableLevel(level) ); 
+        noAvailableLevels.shift();
+        const result = !(prevCell.HasSolution && currCell.HasSolution) || (prevCell.Skyscraper.Level < currCell.Skyscraper.Level);
+        return result ? prevCell : false;
+      });
+    });
+
+    const indexLast  = size - 1;
+    // +b1 +b2 +b3 +b4 +6 (a)
+    cells[indexLast].addRules( (level) => {
+      if (level === Skyscraper.MaxLevel) { return true; }
+
+      let levels = Skyscraper.Levels.slice();
+      levels.splice(level - 1, 1);
+      return cells.slice(0, -1).every( (cell, index) => cell.setLevel(levels[index]) );
+     });
+    
+     // +2 (1) +3 +4 +5 +6 
+     // +2 +3 (1) +4 +5 +6
+     // +2 +3 +4 (1) +5 +6
+     // +2 +3 +4 +5 (1) +6
+     // +2 +3 +5 +5 +6 (1)
+     cells.slice(1).forEach( (cell) => cell.addRules( (level) => {
+        if (level !== Skyscraper.MinLevel) { return true; }
+
+        let levels = Skyscraper.Levels.slice(1);
+        return cells.filter( (_cell) => _cell !== cell ).every( (cell, index) => cell.setLevel(levels[index]) );
+     }));
+
+  }
+
+  static _setRulesBarrier(restriction) {
+    const cells = restriction.Cells, 
+          size = cells.length;
+
+    // 3: (1) (2) +6 0 0 0
+    // 4: (1) (2) (3) +6 0 0
+    // 5: (1) (2) (3) (4) +5 0
+    cells.slice(0, restriction.VisibleCount).forEach( (cell, index, _cells) => cell.addRules( (level) => {
+      const result = _cells.every( (_cell, _index) => _cell.HasSolution && (_cell.Skyscraper.Level === _index + 1) );
+      return result ? cells[restriction.VisibleCount].setLevel(Skyscraper.MaxLevel) : true;
+    }));
+
+    // 3: +4 0 0 0 (5) (6)
+    // 4: +3 0 0 (4) (5) (6)
+    // 5: +2 0 (3) (4) (5) (6)
+    cells.slice(1 - restriction.VisibleCount).forEach( (cell, index, _cells) => cell.addRules( (level) => {
+      const _indexFinal = Skyscraper.MaxLevel - restriction.VisibleCount + 1;
+      const result = _cells.every( (_cell, _index) => _cell.HasSolution && (_cell.Skyscraper.Level === _index + _indexFinal + 1) );
+      return result ? cells[0].setLevel(_indexFinal) : true;
+    }));
+  }
+
+  /**
+   * Find level and returns it position
+   * @param {number} level 
+   * @param {Cells[]} cells 
+   * @returns {number} level position or -1 if don't find
+   */
+  static _findPosition(level, cells, start = 0) {
+    for (let ind = start; ind < cells.length; ind++) {
+      if (cells[ind].Skyscraper.Level === level) { return ind; }
+    }
+    return -1;
   }
 
 }
@@ -282,7 +385,7 @@ class Grid {
     const cell = this.NextCell;
     if (!cell) { return false; }
 
-    const levels = cell.Skyscraper.AvailableLevels.slice();
+    const levels = cell.Skyscraper.AvailableLevels.slice().reverse();
     for (const level of  levels) {
       this._backup();
 
@@ -434,7 +537,7 @@ function solvePuzzle2 (clues) {
     console.error("Wrong grid size!");
     return []; 
   }
-
+  // console.log(clues);
   console.time('Total');
   const grid = new Grid(clues);
   grid.calculate();
@@ -442,14 +545,13 @@ function solvePuzzle2 (clues) {
   if ( !grid.HasSolution ) {
     grid.bruteForce();
   }
-  console.timeEnd('Total');
-  console.log(`Counter: ${grid.debugBruteForceCounter}`);
-  
   if ( !grid.HasSolution ) {
     console.warn("No solution, see temp grid:");
-    console.log(grid.Result);
     console.log(grid);
+    console.log(grid.Result);
   }
+  console.timeEnd('Total');
+  console.log(`Counter: ${grid.debugBruteForceCounter}`);
 
   return grid.Result;
 }
@@ -459,22 +561,48 @@ function solvePuzzle2 (clues) {
 // solvePuzzle2([3,2,2,3,2,1, 1,2,3,3,2,2, 5,1,2,2,4,3, 3,2,1,2,2,4]);
 // solvePuzzle2([0,0,0,2,2,0, 0,0,0,6,3,0, 0,4,0,0,0,0, 4,4,0,3,0,0]);
 // solvePuzzle2([0,3,0,5,3,4, 0,0,0,0,0,1, 0,3,0,3,2,3, 3,2,0,3,1,0]);
-  
-//1.0s 28452
-//1.0s 28234
-//0.3s 9930!
+// solvePuzzle2([0,0,0,6,3,0, 0,4,0,0,0,0, 4,4,0,3,0,0, 0,0,0,2,2,0 ]);
+
+// //1.0s 28452
+// //1.0s 28234
+// //0.3s 9930!
+// //     0.3s 8218
+// //     0.2s 6168
 // solvePuzzle2([7,0,0,0,2,2,3, 0,0,3,0,0,0,0, 3,0,3,0,0,5,0, 0,0,0,0,5,0,4]);
 
-// 1.8s 50117
-// 1.7s 50463
-// 2.0s 48507!
+// // 1.8s 50117
+// // 1.7s 50463
+// // 2.0s 48507!
+// //      1.1s 40119    // add 4th rule
+// //      1.0s 35491    // optimize and fix 4th rule
+// //      0.6s 21030    // add 5th rule with optimization
+// //      0.6s 20907    // add 6th rule
+// //      0.06s 1243    // reverse
+// //      0.06s 1239    // add barrier for end
 // solvePuzzle2([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1]);
 
-console.log( solvePuzzle2([0,0,0,6,3,0, 0,4,0,0,0,0, 4,4,0,3,0,0, 0,0,0,2,2,0 ]) );
-
-// for a _very_ hard puzzle, replace the last 7 values with zeroes
-// 4.8s 137720
-// 5.0s 154721
-// 5.0s 151337 (!)
-// 4.3s 135813    // add 3 rules for clue=2
+// // for a _very_ hard puzzle, replace the last 7 values with zeroes
+// // 4.8s 137720
+// // 5.0s 154721
+// // 5.0s 151337 (!)
+// // 4.3s 3.3s 135813    // add 3 rules for clue=2
+// //      3.1s 130319    // add 4th rule for 1st cell
+// //      3.0s 127693    // add 4th rule for 3d + other cell
+// //      2.6s 109861    // optimize and fix 4th rule
+// //      2.4s 92329     // add 5th rule with optimization
+// //      2.2s 88594     // add 6th rule
+// //      0.08s 2732     // reverse
 // solvePuzzle2([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 0,0,0,0,0,0,0]);
+
+
+// //      28.6s 1225301  // w/o rules
+// //      18.0s 761522   // add 6th rule
+// //      0.7s 27548     // reverse
+// //      0.7s 26827     // add barrier for start
+// //      0.7s 25837     // add barrier for end
+// solvePuzzle2([6,4,0,2,0,0,3, 0,3,3,3,0,0,4, 0,5,0,5,0,2,0, 0,0,0,4,0,0,3]);
+
+
+//      56.0s 2322625     // w/o rules
+//      42.7s 1702915     // add barrier for end
+console.log( solvePuzzle2([0,0,5,3,0,2,0, 0,0,0,4,5,0,0, 0,0,0,3,2,5,4, 2,2,0,0,0,0,5]) );
