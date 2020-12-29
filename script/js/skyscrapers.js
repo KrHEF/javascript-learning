@@ -13,6 +13,7 @@ class Skyscraper {
   constructor(level = Skyscraper.NO_LEVEL, levels = Skyscraper._levels) {
     this._level = level;
     this._availableLevels = new Set(levels);
+    this._isSet = false;
   }
 
   static get NO_LEVEL() { return 0; }
@@ -31,6 +32,7 @@ class Skyscraper {
   get HasLevel() { return !!this._level; }
   get AvailableLevels() { return Array.from(this._availableLevels); }
   get AvailableLevelsCount() { return this._availableLevels.size; }
+  get IsSet() { return this._isSet; }
 
   static clone(skyscraper) {
     return new Skyscraper(skyscraper._level, skyscraper._availableLevels);
@@ -39,9 +41,10 @@ class Skyscraper {
   setLevel(level) {
     if (this.HasLevel) { return this._level === level; }
 
-    if (level >= Skyscraper.MinLevel && level <= Skyscraper.MaxLevel) {
+    if ( this.hasAvailableLevel(level) ) {
       this._level = level;
       this._availableLevels.clear();
+      this._isSet = true;
       return true;
     }
 
@@ -64,6 +67,7 @@ class Cell {
     this._colIndex = colIndex;
     this._rowIndex = rowIndex;
     this._siblingCells = [];
+    this._rules = [];
   }
 
   get Skyscraper() { return this._skyscraper; }
@@ -76,6 +80,7 @@ class Cell {
     if (!obj['_skyscraper']) { throw new Error("Rollback error"); }
     this._skyscraper = obj['_skyscraper']; 
   }
+  get IsSet() { return this._skyscraper.IsSet; }
 
   static create(size) {
     Skyscraper.Levels = size;
@@ -88,13 +93,23 @@ class Cell {
     return cells;
   }
 
-
   setLevel(level) {
-    if ( this._skyscraper.setLevel(level) ) {
+    if (this._skyscraper.HasLevel) {
+      return this._skyscraper.setLevel(level);
+    } else if ( this._skyscraper.setLevel(level) ) {
       this._removeAvailableLevelForSibling(level);
-      return true;
+      return this._checkRules(level);
+    } else {
+      return false;
     }
-    return false;
+  }
+
+  addRules(rules) {
+    if ( Array.isArray(rules) ) {
+      rules.forEach( (rule) => this._rules.push(rule) );
+    } else {
+      this._rules.push(rules);
+    }
   }
 
   setSiblings(allCells) {
@@ -111,6 +126,10 @@ class Cell {
     this._siblingCells.forEach( (cell) => cell.removeAvailableLevel(level) );
   }
 
+  _checkRules(level) {
+    return this._rules.every( (rule) => rule(level) );
+  }
+
 }
 
 class Restriction {
@@ -120,6 +139,9 @@ class Restriction {
     this._cells = sortCells;
     this._isChecked = false;
   }
+
+  static get MinVisibleCount() { return Skyscraper.MinLevel; }
+  static get MaxVisibleCount() { return Skyscraper.MaxLevel; }
 
   get VisibleCount() { return this._count; }
   get Cells() { return this._cells; }
@@ -179,6 +201,40 @@ class Restriction {
   }
 }
 
+class RestrictionRules {
+
+  static set(restriction) {
+    switch (restriction.VisibleCount) {
+      case Restriction.MinVisibleCount + 1:  // 2
+        this._setRulesFor2(restriction);
+        break;
+    }
+  }
+
+  /**
+   * @param {Restriction} restriction 
+   */
+  static _setRulesFor2(restriction) {
+    const cells = restriction.Cells, 
+          size = cells.length;
+
+    const index0 = 0;    // 1st
+    // 1 +6 0 0 0 0
+    cells[index0].addRules( (level) => 
+      (level === Skyscraper.MinLevel) ? cells[index0 + 1].setLevel(Skyscraper.MaxLevel) : true );
+
+    const index2 = 2;        // 3d
+    // 0 +6 5 0 0 0
+    cells[index2].addRules( (level) => (level === (Skyscraper.MaxLevel - 1)) ?  cells[index2 - 1].setLevel(level) : true );
+    
+    const indexLast = size - 1;   // last position
+    // +5 0 0 0 0 6
+    cells[indexLast].addRules( (level) => (level === Skyscraper.MaxLevel) ? cells[0].setLevel(Skyscraper.MaxLevel - 1) : true );
+        
+  }
+
+}
+
 class Grid {
   
   constructor(clues = []) {
@@ -219,7 +275,7 @@ class Grid {
   
   calculate() {
     this._calculateByRestrictions();
-    this._calculateFromAvailable();
+    this._findAvailable();
   }
 
   bruteForce(){
@@ -231,7 +287,7 @@ class Grid {
       this._backup();
 
       if ( cell.setLevel(level) && this._checkRestrictions(cell) ) {
-        this._calculateFromAvailable();
+        this._findAvailable();
         if (this.HasSolution) { return true; }
         if (this.bruteForce()) { return true; }
       } 
@@ -264,8 +320,8 @@ class Grid {
 
       cells = (isRow) ? this._rows[cellsIndex] : this._cols[cellsIndex];
       restrictions[index] = new Restriction(clue, isReverse ? cells.slice().reverse() : cells);
+      RestrictionRules.set(restrictions[index]);
     });
-
     return restrictions;
   }
 
@@ -319,7 +375,7 @@ class Grid {
     }
   }
 
-  _calculateFromAvailable() {
+  _findAvailable() {
     let findLevel = true;
 
     while (findLevel) {
@@ -414,8 +470,11 @@ function solvePuzzle2 (clues) {
 // 2.0s 48507!
 // solvePuzzle2([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1]);
 
+console.log( solvePuzzle2([0,0,0,6,3,0, 0,4,0,0,0,0, 4,4,0,3,0,0, 0,0,0,2,2,0 ]) );
+
 // for a _very_ hard puzzle, replace the last 7 values with zeroes
 // 4.8s 137720
 // 5.0s 154721
-// 6.8s 151337!
-solvePuzzle2([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 0,0,0,0,0,0,0]);
+// 5.0s 151337 (!)
+// 4.3s 135813    // add 3 rules for clue=2
+// solvePuzzle2([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 0,0,0,0,0,0,0]);
