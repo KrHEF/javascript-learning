@@ -13,7 +13,6 @@ class Skyscraper {
   constructor(level = Skyscraper.NO_LEVEL, levels = Skyscraper._levels) {
     this._level = level;
     this._availableLevels = new Set(levels);
-    this._isSet = false;
   }
 
   static get NO_LEVEL() { return 0; }
@@ -32,7 +31,7 @@ class Skyscraper {
   get HasLevel() { return !!this._level; }
   get AvailableLevels() { return Array.from(this._availableLevels); }
   get AvailableLevelsCount() { return this._availableLevels.size; }
-  get IsSet() { return this._isSet; }
+  get MaxAvailableLevel() { return this.AvailableLevels.slice(-1)[0]; }
 
   static clone(skyscraper) {
     return new Skyscraper(skyscraper._level, skyscraper._availableLevels);
@@ -44,7 +43,6 @@ class Skyscraper {
     if ( this.hasAvailableLevel(level) ) {
       this._level = level;
       this._availableLevels.clear();
-      this._isSet = true;
       return true;
     }
 
@@ -80,7 +78,6 @@ class Cell {
     if (!obj['_skyscraper']) { throw new Error("Rollback error"); }
     this._skyscraper = obj['_skyscraper']; 
   }
-  get IsSet() { return this._skyscraper.IsSet; }
 
   static create(size) {
     Skyscraper.Levels = size;
@@ -181,12 +178,19 @@ class Restriction {
 
     let result = 0,
         prevLevelMax = 0,
-        currLevel = 0;
+        currLevel = 0,
+        isMaxAvailableMode = false;
     for (let cell of this._cells) {
       currLevel = cell.Skyscraper.Level;
         
-      // Если натыкаемся на 0 ячейку, то проверим не превышает ли уже результат установленное ограничение      
-      if ( !currLevel ) { return result < this._count; } 
+      // Если натыкаемся на 0 ячейку, то проверим не превышает ли результат установленное ограничение      
+      if (currLevel === Skyscraper.NO_LEVEL) { return result < this._count; } 
+      if (currLevel === Skyscraper.NO_LEVEL) {
+        // if (result >= this._count || !cell.Skyscraper.AvailableLevelsCount) { return false; }
+        if (result >= this._count) { return false; }
+        isMaxAvailableMode = true;
+        currLevel = cell.Skyscraper.MaxAvailableLevel;
+      } 
 
       if (prevLevelMax < currLevel) {
         result++;
@@ -196,8 +200,20 @@ class Restriction {
       if ( currLevel === Skyscraper.MaxLevel ) { break; }
     }
 
-    this._isChecked = (this._count === result);
+    if (isMaxAvailableMode) {
+      return result <= this._count;
+    }
+    this._isChecked = (result === this._count);
     return this._isChecked;
+  }
+
+  toDebug() {
+    let result = '';
+    for (let cell of this._cells) {
+      result += cell.HasSolution ? `(${cell.Skyscraper.Level})` : cell.Skyscraper.MaxAvailableLevel;
+      result += ', ';
+    }
+    return `${this.VisibleCount}: ${result}`;
   }
 }
 
@@ -354,7 +370,7 @@ class Grid {
   }  
 
   get HasSolution() {
-    return this._cells.every( (cell) => cell.HasSolution && this._checkRestrictions(cell) );
+    return this._cells.every( (cell) => cell.HasSolution );
   }
 
   get Result() { 
@@ -363,11 +379,10 @@ class Grid {
 
   get EmptyCells() {
     return this._cells.filter( (cell) => !cell.Skyscraper.HasLevel )
-                      .sort( (cellA, cellB) => cellA.Skyscraper.AvailableLevelsCount 
-                                             - cellB.Skyscraper.AvailableLevelsCount );
+                      .sort( this._sortCellsForBruteForce );
   }
 
-  get NextCell() {
+  get NextEmptyCell() {
     return this.EmptyCells[0];
   }
 
@@ -382,23 +397,29 @@ class Grid {
   }
 
   bruteForce(){
-    const cell = this.NextCell;
+    if (this.debugBruteForceCounter >= 2e6) { return true; }
+    const cell = this.NextEmptyCell;
     if (!cell) { return false; }
 
     const levels = cell.Skyscraper.AvailableLevels.slice().reverse();
     for (const level of  levels) {
       this._backup();
 
-      if ( cell.setLevel(level) && this._checkRestrictions(cell) ) {
-        this._findAvailable();
-        if (this.HasSolution) { return true; }
-        if (this.bruteForce()) { return true; }
-      } 
+      if ( cell.setLevel(level) && this.checkRestrictions() ) {
+        const findAvailableResult = this._findAvailable();
+        const checkRestrictionsResult = !findAvailableResult || this.checkRestrictions();
+        if ( checkRestrictionsResult && this.HasSolution ) { return true; }
+        if ( checkRestrictionsResult && this.bruteForce() ) { return true; }
+      }
       
       this._rollback();
     }
     
     return false;
+  }
+
+  checkRestrictions() {
+    return this._restrictions.every( (restriction) => restriction.check() );
   }
 
   _setReferences() {
@@ -428,43 +449,29 @@ class Grid {
     return restrictions;
   }
 
-  _getRestrictionsIds(cell) {
-    return [cell.ColIndex,                        // up
-            cell.RowIndex + this._size,           // right
-            3 * this._size - 1 - cell.ColIndex,   // down
-            4 * this._size - 1 - cell.RowIndex];  // left
-  }
-
-  _checkRestrictions(cell) {
-    const indexes = this._getRestrictionsIds(cell);
-    return indexes.every( (index) => {
-        const restriction = this._restrictions[index];
-        return !restriction || restriction.check();
-    });
-  }
 
   _calculateByRestrictions() {
-    this._setCellAndFilterRestrictions();
+    this._setCellsAndFilterRestrictions();
     this._restrictions.forEach( (restriction) => { 
       this._removeAvailableLevelsByRestriction(restriction);
     });
 
   }
   
-  _setCellAndFilterRestrictions() {
-    this._restrictions = this._restrictions.filter( (restriction) => {
+  _setCellsAndFilterRestrictions() {
+    this._restrictions.forEach( (restriction, index, arr) => {
       switch (restriction.VisibleCount) {
-        case Skyscraper.MinLevel:
+        case Restriction.MinVisibleCount:
           restriction.Cells[0].setLevel(Skyscraper.MaxLevel);
-          return false;
-        case Skyscraper.MaxLevel:
+          delete arr[index];
+          break;
+        case Restriction.MaxVisibleCount:
           restriction.Cells.forEach( (cell, index) => cell.setLevel(Skyscraper.MinLevel + index) );
-          return false;
-        case Skyscraper.MinLevel + 1: // Удалить у 2-го числа в ряду из доступных {макс. число - 1}
+          delete arr[index];
+          break;
+        case Restriction.MinVisibleCount + 1: // Удалить у 2-го числа в ряду из доступных {макс. число - 1}
           restriction.Cells[1].removeAvailableLevel(Skyscraper.MaxLevel - 1);
-          return true;
-        default:
-          return true;
+          break;
       }
     });
   }
@@ -478,8 +485,18 @@ class Grid {
     }
   }
 
+  _sortCellsForBruteForce(cellA, cellB) {
+    // return 10 * (cellA.Skyscraper.AvailableLevelsCount - cellB.Skyscraper.AvailableLevelsCount)
+    //   - cellA.Skyscraper.AvailableLevels[cellA.Skyscraper.AvailableLevelsCount - 1] 
+    //     - cellB.Skyscraper.AvailableLevels[cellB.Skyscraper.AvailableLevelsCount - 1];
+    return  (cellA.Skyscraper.AvailableLevelsCount - cellB.Skyscraper.AvailableLevelsCount);
+    // return cellA.Skyscraper.AvailableLevels[cellA.Skyscraper.AvailableLevelsCount - 1] 
+    //       - cellB.Skyscraper.AvailableLevels[cellB.Skyscraper.AvailableLevelsCount - 1];
+    }
+
   _findAvailable() {
-    let findLevel = true;
+    let findLevel = true,
+        findSomething = false;
 
     while (findLevel) {
       findLevel = false;
@@ -514,7 +531,11 @@ class Grid {
           }
         }
       });
-    }       
+
+      if (findLevel) { findSomething = true; }
+    }    
+    
+    return findSomething;
   }
   
   _backup() {
@@ -542,13 +563,13 @@ function solvePuzzle2 (clues) {
   const grid = new Grid(clues);
   grid.calculate();
 
-  if ( !grid.HasSolution ) {
-    grid.bruteForce();
-  }
-  if ( !grid.HasSolution ) {
-    console.warn("No solution, see temp grid:");
-    console.log(grid);
-    console.log(grid.Result);
+  if (!grid.HasSolution) {
+    const result = grid.bruteForce();
+    if (!result) {
+      console.warn("No solution, see temp grid:");
+      console.log(grid);
+      console.log(grid.Result);
+    }
   }
   console.timeEnd('Total');
   console.log(`Counter: ${grid.debugBruteForceCounter}`);
@@ -556,53 +577,80 @@ function solvePuzzle2 (clues) {
   return grid.Result;
 }
 
-// solvePuzzle2([2,2,1,3, 2,2,3,1, 1,2,2,3, 3,2,1,3]);
-// solvePuzzle2([0,0,1,2, 0,2,0,0, 0,3,0,0, 0,1,0,0]);
-// solvePuzzle2([3,2,2,3,2,1, 1,2,3,3,2,2, 5,1,2,2,4,3, 3,2,1,2,2,4]);
-// solvePuzzle2([0,0,0,2,2,0, 0,0,0,6,3,0, 0,4,0,0,0,0, 4,4,0,3,0,0]);
-// solvePuzzle2([0,3,0,5,3,4, 0,0,0,0,0,1, 0,3,0,3,2,3, 3,2,0,3,1,0]);
-// solvePuzzle2([0,0,0,6,3,0, 0,4,0,0,0,0, 4,4,0,3,0,0, 0,0,0,2,2,0 ]);
+console.log(1); 
+solvePuzzle2([2,2,1,3, 2,2,3,1, 1,2,2,3, 3,2,1,3]);
+console.log(2);
+solvePuzzle2([0,0,1,2, 0,2,0,0, 0,3,0,0, 0,1,0,0]);
+console.log(3);
+solvePuzzle2([3,2,2,3,2,1, 1,2,3,3,2,2, 5,1,2,2,4,3, 3,2,1,2,2,4]);
+console.log(4);
+solvePuzzle2([0,0,0,2,2,0, 0,0,0,6,3,0, 0,4,0,0,0,0, 4,4,0,3,0,0]);
+console.log(5);
+solvePuzzle2([0,3,0,5,3,4, 0,0,0,0,0,1, 0,3,0,3,2,3, 3,2,0,3,1,0]);
+console.log(6);
+solvePuzzle2([0,0,0,6,3,0, 0,4,0,0,0,0, 4,4,0,3,0,0, 0,0,0,2,2,0 ]);
 
-// //1.0s 28452
-// //1.0s 28234
-// //0.3s 9930!
-// //     0.3s 8218
-// //     0.2s 6168
-// solvePuzzle2([7,0,0,0,2,2,3, 0,0,3,0,0,0,0, 3,0,3,0,0,5,0, 0,0,0,0,5,0,4]);
+console.log(7);
+// 1.0s 28452
+// 1.0s 28234
+// 0.3s 9930!
+//      0.3s 8218
+//      0.2s 6168
+// 0.3s      3161    // bug fix: delete index of restriction array
+// 0.03s     544     // correct check restriction
+// 0.03s     397     // correct brute force
+solvePuzzle2([7,0,0,0,2,2,3, 0,0,3,0,0,0,0, 3,0,3,0,0,5,0, 0,0,0,0,5,0,4]);
 
-// // 1.8s 50117
-// // 1.7s 50463
-// // 2.0s 48507!
-// //      1.1s 40119    // add 4th rule
-// //      1.0s 35491    // optimize and fix 4th rule
-// //      0.6s 21030    // add 5th rule with optimization
-// //      0.6s 20907    // add 6th rule
-// //      0.06s 1243    // reverse
-// //      0.06s 1239    // add barrier for end
-// solvePuzzle2([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1]);
+console.log(8);
+// 1.8s 50117
+// 1.7s 50463
+// 2.0s 48507!
+//      1.1s 40119    // add 4th rule
+//      1.0s 35491    // optimize and fix 4th rule
+//      0.6s 21030    // add 5th rule with optimization
+//      0.6s 20907    // add 6th rule
+//      0.06s 1243    // reverse
+// 0.1s 0.06s 1239    // add barrier for end
+// 0.4s       10253   // bug fix: delete index of restriction array
+// 0.03s      499     // correct check restriction
+// 0.03s      336     // correct brute force
+solvePuzzle2([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1]);
 
-// // for a _very_ hard puzzle, replace the last 7 values with zeroes
-// // 4.8s 137720
-// // 5.0s 154721
-// // 5.0s 151337 (!)
-// // 4.3s 3.3s 135813    // add 3 rules for clue=2
-// //      3.1s 130319    // add 4th rule for 1st cell
-// //      3.0s 127693    // add 4th rule for 3d + other cell
-// //      2.6s 109861    // optimize and fix 4th rule
-// //      2.4s 92329     // add 5th rule with optimization
-// //      2.2s 88594     // add 6th rule
-// //      0.08s 2732     // reverse
-// solvePuzzle2([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 0,0,0,0,0,0,0]);
+console.log(9);
+// for a _very_ hard puzzle, replace the last 7 values with zeroes
+// 4.8s 137720
+// 5.0s 154721
+// 5.0s 151337 (!)
+// 4.3s 3.3s 135813    // add 3 rules for clue=2
+//      3.1s 130319    // add 4th rule for 1st cell
+//      3.0s 127693    // add 4th rule for 3d + other cell
+//      2.6s 109861    // optimize and fix 4th rule
+//      2.4s 92329     // add 5th rule with optimization
+//      2.2s 88594     // add 6th rule
+// 0.3s 0.08s 2732     // reverse
+// 0.6s       11364    // bug fix: delete index of restriction array
+// 0.05s      806      // correct check restriction
+// 0.05s      592      // correct brute force
+solvePuzzle2([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 0,0,0,0,0,0,0]);
 
 
-// //      28.6s 1225301  // w/o rules
-// //      18.0s 761522   // add 6th rule
-// //      0.7s 27548     // reverse
-// //      0.7s 26827     // add barrier for start
-// //      0.7s 25837     // add barrier for end
-// solvePuzzle2([6,4,0,2,0,0,3, 0,3,3,3,0,0,4, 0,5,0,5,0,2,0, 0,0,0,4,0,0,3]);
+console.log(10);
+//      28.6s 1225301  // w/o rules
+//      18.0s 761522   // add 6th rule
+//      0.7s 27548     // reverse
+//      0.7s 26827     // add barrier for start
+// 2.0s 0.7s 25837     // add barrier for end
+// 0.1s      2769      // bug fix: delete index of restriction array
+// 0.03s     835       // correct check restriction
+// 0.05s     585       // correct brute force
+solvePuzzle2([6,4,0,2,0,0,3, 0,3,3,3,0,0,4, 0,5,0,5,0,2,0, 0,0,0,4,0,0,3]);
 
 
-//      56.0s 2322625     // w/o rules
-//      42.7s 1702915     // add barrier for end
-console.log( solvePuzzle2([0,0,5,3,0,2,0, 0,0,0,4,5,0,0, 0,0,0,3,2,5,4, 2,2,0,0,0,0,5]) );
+console.log(11);
+//       56.0s 2322625     // w/o rules
+// 60.7s 42.7s 1702915     // add barrier for end
+// 10.0s       199187      // change sorting [errors]
+// 77.0s       1982005     // bug fix: delete index of restriction array
+// 6.71s       205068      // correct check restriction
+// 6.36s       136696      // correct brute force
+solvePuzzle2([0,0,5,3,0,2,0, 0,0,0,4,5,0,0, 0,0,0,3,2,5,4, 2,2,0,0,0,0,5]);
