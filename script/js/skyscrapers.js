@@ -33,8 +33,8 @@ class Skyscraper {
   get AvailableLevelsCount() { return this._availableLevels.size; }
   get MaxAvailableLevel() { return this.AvailableLevels.slice(-1)[0]; }
 
-  static clone(skyscraper) {
-    return new Skyscraper(skyscraper._level, skyscraper._availableLevels);
+  clone() {
+    return new Skyscraper(this._level, this._availableLevels);
   }
 
   setLevel(level) {
@@ -65,19 +65,23 @@ class Cell {
     this._colIndex = colIndex;
     this._rowIndex = rowIndex;
     this._siblingCells = [];
-    this._rules = [];
+    this._rules = []; 
   }
 
-  get Skyscraper() { return this._skyscraper; }
-  set Skyscraper(value) { this._skyscraper = value; }
+  // get Skyscraper() { return this._skyscraper; }
   get RowIndex() { return this._rowIndex; }
   get ColIndex() { return this._colIndex; }
-  get HasSolution() { return this._skyscraper.HasLevel; }
-  get BackupObject() { return { _skyscraper: Skyscraper.clone(this._skyscraper) }; }
+  get BackupObject() { return { _skyscraper: this._skyscraper.clone() }; }
   set BackupObject(obj) { 
     if (!obj['_skyscraper']) { throw new Error("Rollback error"); }
     this._skyscraper = obj['_skyscraper']; 
   }
+  // Skyscapers overload
+  get Level() { return this._skyscraper.Level; }
+  get HasLevel() { return this._skyscraper.HasLevel; }
+  get AvailableLevels() { return this._skyscraper.AvailableLevels; }
+  get AvailableLevelsCount() { return this._skyscraper.AvailableLevelsCount; }
+  get MaxAvailableLevel() { return this._skyscraper.MaxAvailableLevel; }
 
   static create(size) {
     Skyscraper.Levels = size;
@@ -94,7 +98,7 @@ class Cell {
     if (this._skyscraper.HasLevel) {
       return this._skyscraper.setLevel(level);
     } else if ( this._skyscraper.setLevel(level) ) {
-      this._removeAvailableLevelForSibling(level);
+      this._removeAvailableLevelFromSibling(level);
       return this._checkRules(level);
     } else {
       return false;
@@ -115,11 +119,15 @@ class Cell {
     });
   }
 
-  removeAvailableLevel(level) {
-    this.Skyscraper.removeAvailableLevel(level);
+  hasAvailableLevel(level) {
+    return this._skyscraper.hasAvailableLevel(level);
   }
 
-  _removeAvailableLevelForSibling(level) {
+  removeAvailableLevel(level) {
+    this._skyscraper.removeAvailableLevel(level);
+  }
+
+  _removeAvailableLevelFromSibling(level) {
     this._siblingCells.forEach( (cell) => cell.removeAvailableLevel(level) );
   }
 
@@ -170,7 +178,7 @@ class Restriction {
       throw new Error("Overflow restrictions");
     }
 
-    return { cellsIndex,isRow, isReverse };
+    return {cellsIndex, isRow, isReverse};
   }
 
   check() {
@@ -178,43 +186,32 @@ class Restriction {
 
     let result = 0,
         prevLevelMax = 0,
-        currLevel = 0,
-        isMaxAvailableMode = false;
+        currLevel = 0;
+    
     for (let cell of this._cells) {
-      currLevel = cell.Skyscraper.Level;
+      currLevel = cell.Level;
         
-      // Если натыкаемся на 0 ячейку, то проверим не превышает ли результат установленное ограничение      
       if (currLevel === Skyscraper.NO_LEVEL) { return result < this._count; } 
-      if (currLevel === Skyscraper.NO_LEVEL) {
-        // if (result >= this._count || !cell.Skyscraper.AvailableLevelsCount) { return false; }
-        if (result >= this._count) { return false; }
-        isMaxAvailableMode = true;
-        currLevel = cell.Skyscraper.MaxAvailableLevel;
-      } 
-
       if (prevLevelMax < currLevel) {
         result++;
         prevLevelMax = currLevel;
       }
-
-      if ( currLevel === Skyscraper.MaxLevel ) { break; }
+      if (currLevel === Skyscraper.MaxLevel) { break; }
     }
 
-    if (isMaxAvailableMode) {
-      return result <= this._count;
-    }
     this._isChecked = (result === this._count);
     return this._isChecked;
   }
 
-  toDebug() {
-    let result = '';
-    for (let cell of this._cells) {
-      result += cell.HasSolution ? `(${cell.Skyscraper.Level})` : cell.Skyscraper.MaxAvailableLevel;
-      result += ', ';
+  removeAvailableLevels() {
+    const clue = this.VisibleCount;
+    for (let level = Skyscraper.MaxLevel - (clue - 2); level <= Skyscraper.MaxLevel; level++) {
+      for (let index = 0; index <= (clue - 2) - (Skyscraper.MaxLevel - level); index++) {
+        this._cells[index].removeAvailableLevel(level);
+      }
     }
-    return `${this.VisibleCount}: ${result}`;
   }
+
 }
 
 class RestrictionRules {
@@ -255,7 +252,7 @@ class RestrictionRules {
 
     //(a > 1) +n1:[<a] +n2:[<a]/6 +n3:[<a]/6 +n4:[<a]/6 6
     const rule_A___Max_ = () => {
-      const level0 = cells[0].Skyscraper.Level;
+      const level0 = cells[0].Level;
       if (level0 <= Skyscraper.MinLevel) { return true; }
       let indexMax = this._findPosition(Skyscraper.MaxLevel, cells, 2);
       if (indexMax < 2) { return true; }
@@ -267,7 +264,7 @@ class RestrictionRules {
       const noAvailableLevels = Skyscraper.Levels.slice(level0);
       return cells.slice(1, indexMax).every( (cell) => {
         noAvailableLevels.forEach( (level) => cell.removeAvailableLevel(level) ); 
-        return !cell.HasSolution || (cell.Skyscraper.Level < cells[0].Skyscraper.Level) 
+        return !cell.HasLevel || (cell.Level < cells[0].Level) 
       });
     }
     cells[index0].addRules( (level) => level > 1 ? rule_A___Max_() : true );
@@ -288,7 +285,7 @@ class RestrictionRules {
         if (!prevCell) { return false; }
         noAvailableLevels.forEach( (level) => prevCell.removeAvailableLevel(level) ); 
         noAvailableLevels.shift();
-        const result = !(prevCell.HasSolution && currCell.HasSolution) || (prevCell.Skyscraper.Level < currCell.Skyscraper.Level);
+        const result = !(prevCell.HasLevel && currCell.HasLevel) || (prevCell.Level < currCell.Level);
         return result ? prevCell : false;
       });
     });
@@ -302,7 +299,6 @@ class RestrictionRules {
       levels.splice(level - 1, 1);
       return cells.slice(0, -1).every( (cell, index) => cell.setLevel(levels[index]) );
      });
-    
      // +2 (1) +3 +4 +5 +6 
      // +2 +3 (1) +4 +5 +6
      // +2 +3 +4 (1) +5 +6
@@ -325,7 +321,7 @@ class RestrictionRules {
     // 4: (1) (2) (3) +6 0 0
     // 5: (1) (2) (3) (4) +5 0
     cells.slice(0, restriction.VisibleCount).forEach( (cell, index, _cells) => cell.addRules( (level) => {
-      const result = _cells.every( (_cell, _index) => _cell.HasSolution && (_cell.Skyscraper.Level === _index + 1) );
+      const result = _cells.every( (_cell, _index) => _cell.HasLevel && (_cell.Level === _index + 1) );
       return result ? cells[restriction.VisibleCount].setLevel(Skyscraper.MaxLevel) : true;
     }));
 
@@ -334,7 +330,7 @@ class RestrictionRules {
     // 5: +2 0 (3) (4) (5) (6)
     cells.slice(1 - restriction.VisibleCount).forEach( (cell, index, _cells) => cell.addRules( (level) => {
       const _indexFinal = Skyscraper.MaxLevel - restriction.VisibleCount + 1;
-      const result = _cells.every( (_cell, _index) => _cell.HasSolution && (_cell.Skyscraper.Level === _index + _indexFinal + 1) );
+      const result = _cells.every( (_cell, _index) => _cell.HasLevel && (_cell.Level === _index + _indexFinal + 1) );
       return result ? cells[0].setLevel(_indexFinal) : true;
     }));
   }
@@ -347,7 +343,7 @@ class RestrictionRules {
    */
   static _findPosition(level, cells, start = 0) {
     for (let ind = start; ind < cells.length; ind++) {
-      if (cells[ind].Skyscraper.Level === level) { return ind; }
+      if (cells[ind].Level === level) { return ind; }
     }
     return -1;
   }
@@ -362,30 +358,21 @@ class Grid {
     this._cols  = [ [] ];
 
     this._bruteForceStack = [];
-    this.debugBruteForceCounter = 0; 
+    this._bruteForceCounter = 0; 
 
     this._cells = Cell.create(this._size);
     this._setReferences();
     this._restrictions = this._createRestrictions(clues);
   }  
 
-  get HasSolution() {
-    return this._cells.every( (cell) => cell.HasSolution );
-  }
-
-  get Result() { 
-    return this._rows.map( (row) => row.map( (cell) => cell.Skyscraper.Level ) ); 
-  }
-
+  get HasSolution() { return this._cells.every( (cell) => cell.HasLevel ); }
+  get Result() { return this._rows.map( (row) => row.map( (cell) => cell.Level ) ); }
+  get Counter() { return this._bruteForceCounter; }
+  get NextEmptyCell() { return this.EmptyCells[0]; }
   get EmptyCells() {
-    return this._cells.filter( (cell) => !cell.Skyscraper.HasLevel )
-                      .sort( this._sortCellsForBruteForce );
+    return this._cells.filter( (cell) => !cell.HasLevel )
+                      .sort( (cellA, cellB) => cellA.AvailableLevelsCount - cellB.AvailableLevelsCount);
   }
-
-  get NextEmptyCell() {
-    return this.EmptyCells[0];
-  }
-
 
   static validateSize(length) {
     return !(length % 4);
@@ -397,11 +384,11 @@ class Grid {
   }
 
   bruteForce(){
-    if (this.debugBruteForceCounter >= 2e6) { return true; }
+    if (this._bruteForceCounter >= 2e6) { return true; }
     const cell = this.NextEmptyCell;
     if (!cell) { return false; }
 
-    const levels = cell.Skyscraper.AvailableLevels.slice().reverse();
+    const levels = cell.AvailableLevels.slice().reverse();
     for (const level of  levels) {
       this._backup();
 
@@ -411,7 +398,7 @@ class Grid {
         if ( checkRestrictionsResult && this.HasSolution ) { return true; }
         if ( checkRestrictionsResult && this.bruteForce() ) { return true; }
       }
-      
+
       this._rollback();
     }
     
@@ -449,25 +436,22 @@ class Grid {
     return restrictions;
   }
 
-
   _calculateByRestrictions() {
     this._setCellsAndFilterRestrictions();
-    this._restrictions.forEach( (restriction) => { 
-      this._removeAvailableLevelsByRestriction(restriction);
-    });
+    this._restrictions.forEach( (restriction) => restriction.removeAvailableLevels() );
 
   }
   
   _setCellsAndFilterRestrictions() {
-    this._restrictions.forEach( (restriction, index, arr) => {
+    this._restrictions.forEach( (restriction, index, restrictions) => {
       switch (restriction.VisibleCount) {
         case Restriction.MinVisibleCount:
           restriction.Cells[0].setLevel(Skyscraper.MaxLevel);
-          delete arr[index];
+          delete restrictions[index];
           break;
         case Restriction.MaxVisibleCount:
           restriction.Cells.forEach( (cell, index) => cell.setLevel(Skyscraper.MinLevel + index) );
-          delete arr[index];
+          delete restrictions[index];
           break;
         case Restriction.MinVisibleCount + 1: // Удалить у 2-го числа в ряду из доступных {макс. число - 1}
           restriction.Cells[1].removeAvailableLevel(Skyscraper.MaxLevel - 1);
@@ -476,22 +460,8 @@ class Grid {
     });
   }
 
-  _removeAvailableLevelsByRestriction(restriction) {
-    const clue = restriction.VisibleCount;
-    for (let level = Skyscraper.MaxLevel - (clue - 2); level <= Skyscraper.MaxLevel; level++) {
-      for (let index = 0; index <= (clue - 2) - (Skyscraper.MaxLevel - level); index++) {
-        restriction.Cells[index].removeAvailableLevel(level);
-      }
-    }
-  }
-
   _sortCellsForBruteForce(cellA, cellB) {
-    // return 10 * (cellA.Skyscraper.AvailableLevelsCount - cellB.Skyscraper.AvailableLevelsCount)
-    //   - cellA.Skyscraper.AvailableLevels[cellA.Skyscraper.AvailableLevelsCount - 1] 
-    //     - cellB.Skyscraper.AvailableLevels[cellB.Skyscraper.AvailableLevelsCount - 1];
-    return  (cellA.Skyscraper.AvailableLevelsCount - cellB.Skyscraper.AvailableLevelsCount);
-    // return cellA.Skyscraper.AvailableLevels[cellA.Skyscraper.AvailableLevelsCount - 1] 
-    //       - cellB.Skyscraper.AvailableLevels[cellB.Skyscraper.AvailableLevelsCount - 1];
+    return ;
     }
 
   _findAvailable() {
@@ -503,8 +473,8 @@ class Grid {
 
       // Проверка на 1 доступное число в ячейке среди доступных
       this._cells.forEach( (cell) => {
-        if (cell.Skyscraper.AvailableLevelsCount === 1) {
-          const level = cell.Skyscraper.AvailableLevels[0];
+        if (cell.AvailableLevelsCount === 1) {
+          const level = cell.AvailableLevels[0];
           findLevel = true;
           cell.setLevel(level);
         }
@@ -513,7 +483,7 @@ class Grid {
       // Проверка на 1 доступное число в строке
       this._rows.forEach( (row) => {
         for (let level = Skyscraper.MinLevel; level <= Skyscraper.MaxLevel; level++ ) {
-          const cells = row.filter( (cell) => cell.Skyscraper.hasAvailableLevel(level) );
+          const cells = row.filter( (cell) => cell.hasAvailableLevel(level) );
           if (cells.length === 1) {
             findLevel = true;
             cells[0].setLevel(level);
@@ -524,7 +494,7 @@ class Grid {
       // Проверка на 1 доступное число в колонке
       this._cols.forEach( (column) => {
         for (let level = Skyscraper.MinLevel; level <= Skyscraper.MaxLevel; level++ ) {
-          const cells = column.filter( (cell) => cell.Skyscraper.hasAvailableLevel(level) );
+          const cells = column.filter( (cell) => cell.hasAvailableLevel(level) );
           if (cells.length === 1) {
             findLevel = true;
             cells[0].setLevel(level);
@@ -539,7 +509,7 @@ class Grid {
   }
   
   _backup() {
-    this.debugBruteForceCounter++;
+    this._bruteForceCounter++;
     const map = new Map();
     this.EmptyCells.forEach( (cell) => map.set(cell, cell.BackupObject) );
     this._restrictions.forEach( (restriction) => map.set(restriction, restriction.BackupObject) );
@@ -572,7 +542,7 @@ function solvePuzzle2 (clues) {
     }
   }
   console.timeEnd('Total');
-  console.log(`Counter: ${grid.debugBruteForceCounter}`);
+  console.log(`Counter: ${grid.Counter}`);
 
   return grid.Result;
 }
