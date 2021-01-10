@@ -68,7 +68,6 @@ class Cell {
     this._rules = []; 
   }
 
-  // get Skyscraper() { return this._skyscraper; }
   get RowIndex() { return this._rowIndex; }
   get ColIndex() { return this._colIndex; }
   get BackupObject() { return { _skyscraper: this._skyscraper.clone() }; }
@@ -211,7 +210,6 @@ class Restriction {
       }
     }
   }
-
 }
 
 class RestrictionRules {
@@ -229,7 +227,7 @@ class RestrictionRules {
       case Restriction.MaxVisibleCount:
         break;
       default:
-        this._setRulesBarrier(restriction)  // others restrictions
+        this._setRulesBarrier(restriction);  // others restrictions
         break;
     }
   }
@@ -347,7 +345,6 @@ class RestrictionRules {
     }
     return -1;
   }
-
 }
 
 class Grid {
@@ -384,7 +381,6 @@ class Grid {
   }
 
   bruteForce(){
-    if (this._bruteForceCounter >= 2e6) { return true; }
     const cell = this.NextEmptyCell;
     if (!cell) { return false; }
 
@@ -426,13 +422,12 @@ class Grid {
     clues.forEach( (clue, index) => {
       if (!clue) { return; }  // Clue can be zero
 
-      let {cellsIndex, isRow, isReverse} = Restriction.getParams(index, this._size),
-          cells = [];
-
-      cells = (isRow) ? this._rows[cellsIndex] : this._cols[cellsIndex];
+      const {cellsIndex, isRow, isReverse} = Restriction.getParams(index, this._size);
+      const cells = (isRow) ? this._rows[cellsIndex] : this._cols[cellsIndex];
       restrictions[index] = new Restriction(clue, isReverse ? cells.slice().reverse() : cells);
       RestrictionRules.set(restrictions[index]);
     });
+
     return restrictions;
   }
 
@@ -460,54 +455,29 @@ class Grid {
     });
   }
 
-  _sortCellsForBruteForce(cellA, cellB) {
-    return ;
-    }
-
   _findAvailable() {
-    let findLevel = true,
-        findSomething = false;
+    let findSomething = false;
 
-    while (findLevel) {
-      findLevel = false;
-
-      // Проверка на 1 доступное число в ячейке среди доступных
-      this._cells.forEach( (cell) => {
-        if (cell.AvailableLevelsCount === 1) {
-          const level = cell.AvailableLevels[0];
-          findLevel = true;
-          cell.setLevel(level);
-        }
-      });
-
-      // Проверка на 1 доступное число в строке
-      this._rows.forEach( (row) => {
-        for (let level = Skyscraper.MinLevel; level <= Skyscraper.MaxLevel; level++ ) {
-          const cells = row.filter( (cell) => cell.hasAvailableLevel(level) );
-          if (cells.length === 1) {
-            findLevel = true;
-            cells[0].setLevel(level);
-          }
-        }
-      });
-
-      // Проверка на 1 доступное число в колонке
-      this._cols.forEach( (column) => {
-        for (let level = Skyscraper.MinLevel; level <= Skyscraper.MaxLevel; level++ ) {
-          const cells = column.filter( (cell) => cell.hasAvailableLevel(level) );
-          if (cells.length === 1) {
-            findLevel = true;
-            cells[0].setLevel(level);
-          }
-        }
-      });
-
+    while (true) {
+      let findLevel = this._cells.reduce( (find, cell) => this._findOneAvailableLevelInCell(cell) || find, false);
+      findLevel = this._rows.reduce( (find, cells) => this._findSingleAvailableLevelInCells(cells) || find, findLevel );
+      findLevel = this._cols.reduce( (find, cells) => this._findSingleAvailableLevelInCells(cells) || find, findLevel );
       if (findLevel) { findSomething = true; }
-    }    
-    
-    return findSomething;
+      else { return findSomething; }
+    }   
   }
   
+  _findOneAvailableLevelInCell(cell) {
+      return (cell.AvailableLevelsCount === 1) ? cell.setLevel( cell.AvailableLevels[0] ) : false;
+  }
+
+  _findSingleAvailableLevelInCells(cells) {
+    return Skyscraper.Levels.reduce( (find, level) => {
+      const levelCells = cells.filter( (cell) => cell.hasAvailableLevel(level) );
+      return (levelCells.length === 1) ? levelCells[0].setLevel(level) || find : find;
+    }, false);
+  }
+
   _backup() {
     this._bruteForceCounter++;
     const map = new Map();
@@ -623,4 +593,5 @@ console.log(11);
 // 77.0s       1982005     // bug fix: delete index of restriction array
 // 6.71s       205068      // correct check restriction
 // 6.36s       136696      // correct brute force
+// 6.54s       137894      // Anti refactoring
 solvePuzzle2([0,0,5,3,0,2,0, 0,0,0,4,5,0,0, 0,0,0,3,2,5,4, 2,2,0,0,0,0,5]);
