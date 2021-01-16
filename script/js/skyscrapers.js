@@ -1,9 +1,6 @@
 function solvePuzzle (clues) {
-  if ( !Grid.validateSize(clues.length) ) { throw new Error("Wrong grid size!"); }
-
   const grid = new Grid(clues);
   grid.calculate();
-
   return (grid.HasSolution || grid.bruteForce()) ? grid.Result : [];
 }
 
@@ -45,7 +42,6 @@ class Skyscraper {
       this._availableLevels.clear();
       return true;
     }
-
     return false;
   }
 
@@ -106,17 +102,12 @@ class Cell {
   }
 
   addRules(rules) {
-    if ( Array.isArray(rules) ) {
-      rules.forEach( (rule) => this._rules.push(rule) );
-    } else {
-      this._rules.push(rules);
-    }
+    const _rules = Array.isArray(rules) ? rules : [rules];
+    _rules.forEach( (rule) => this._rules.push(rule) );
   }
 
   setSiblings(allCells) {
-    this._siblingCells = allCells.filter( (cell) => {
-      return (cell !== this) && (cell.ColIndex === this.ColIndex || cell.RowIndex === this.RowIndex) 
-    });
+    this._siblingCells = allCells.filter( (cell) => (cell !== this) && (cell.ColIndex === this.ColIndex || cell.RowIndex === this.RowIndex) );
   }
 
   hasAvailableLevel(level) {
@@ -127,6 +118,11 @@ class Cell {
     this._skyscraper.removeAvailableLevels(levels);
   }
 
+  checkOneAvailableLevel() {
+    return false;
+    return (this.AvailableLevelsCount === 1) ? this.setLevel(this.AvailableLevels[0]) : false;
+  }
+
   _removeAvailableLevelFromSibling(level) {
     this._siblingCells.forEach( (cell) => cell.removeAvailableLevels(level) );
   }
@@ -134,7 +130,6 @@ class Cell {
   _checkRules(level) {
     return this._rules.every( (rule) => rule(level) );
   }
-
 }
 
 class Restriction {
@@ -154,31 +149,17 @@ class Restriction {
   set BackupObject(obj) { this._isChecked = !!obj['_isChecked']; }
 
   static getParams(index, size) {
-    let cellsIndex,
-        isRow,
-        isReverse;
-
     if (index < size) {
-      cellsIndex = index;
-      isRow = false;
-      isReverse = false;
+      return {cellsIndex: index, isRow: false, isReverse: false};
     } else if (index < 2 * size) {
-      cellsIndex = index % size;
-      isRow = true;
-      isReverse = true;
+      return {cellsIndex: index % size, isRow: true, isReverse: true};
     } else if (index < 3 * size) {
-      cellsIndex = size - index % size - 1;
-      isRow = false;
-      isReverse = true;
+      return {cellsIndex: size - index % size - 1, isRow: false, isReverse: true};
     } else if (index < 4 * size) {
-      cellsIndex = size - index % size - 1;
-      isRow = true;
-      isReverse = false;
+      return {cellsIndex: size - index % size - 1, isRow: true, isReverse: false};
     } else {
       throw new Error("Overflow restrictions");
     }
-
-    return {cellsIndex, isRow, isReverse};
   }
 
   static _addRulesCounter(key, subkey = 'all') {
@@ -215,42 +196,46 @@ class Restriction {
     return this._isChecked;
   }
 
-  filterAvailableLevels() {
-    const clue = this.VisibleCount;
-    for (let level = Skyscraper.MaxLevel - (clue - 2); level <= Skyscraper.MaxLevel; level++) {
-      for (let index = 0; index <= (clue - 2) - (Skyscraper.MaxLevel - level); index++) {
-        this._cells[index].removeAvailableLevels(level);
-      }
-    }
-  }
-
   _setLevelsAndRules() {
     switch (this.VisibleCount) {
-      case Restriction.MinVisibleCount:
+    case Restriction.MinVisibleCount:       // 1
         this._cells[0].setLevel(Skyscraper.MaxLevel);
         break;
-      case Restriction.MinVisibleCount + 1:  // 2
-        this._cells[1].removeAvailableLevels(Skyscraper.MaxLevel - 1); 
+      case Restriction.MinVisibleCount + 1: // 2
+        this._removeAvailableLevels();
+        this._cells[1].removeAvailableLevels(Skyscraper.MaxLevel - 1);
+        this._cells[1].checkOneAvailableLevel();
         this._setRulesForTwo_1();
         this._setRulesForTwo_2();
         this._setRulesForTwo_3();
         this._setRulesBarrier();
         break;
-      case Restriction.MaxVisibleCount - 1:  // Max - 1
+      case Restriction.MaxVisibleCount - 1: // Max - 1
+        this._removeAvailableLevels();
         this._setRulesForPreMax_1();
         this._setRulesForPreMax_2();
         this._setRulesForPreMax_3();
         this._setRulesBarrier();
         break;
-      case Restriction.MaxVisibleCount:
+      case Restriction.MaxVisibleCount:     // Max
         this._cells.forEach( (cell, index) => cell.setLevel(Skyscraper.MinLevel + index) );
         break;
       default:  // others restrictions
+        this._removeAvailableLevels();
         this._setRulesBarrier();
         break;
     }
   }
 
+  // 5> -6 -6 -6 -6 0 0    &&    -5 -5 -5 0 0 0    &&    -4 -4 0 0 0 0    &&    -3 0 0 0 0 0                            // 4> -6 -6 -6 0 0 0     &&    -5 -5 0 0 0 0     &&    -4 0 0 0 0 0                                                   // 3> -6 -6 0 0 0 0      &&    -5 0 0 0 0 0                                                                           // 2> -6 0 0 0 0 0
+  _removeAvailableLevels() {
+    for (let ind = 0; ind <= this.VisibleCount - 2; ind++) {
+      for (let lvl = Skyscraper.MaxLevel - (this.VisibleCount - 2) + ind; lvl <= Skyscraper.MaxLevel; lvl++) {
+        this._cells[ind].removeAvailableLevels(lvl);
+        this._cells[ind].checkOneAvailableLevel();
+      }
+    }
+  }
   // 2> 0 +6 (5) 0 0 0
   _setRulesForTwo_1() {
     this._cells[2].addRules( (level) => {
@@ -283,8 +268,14 @@ class Restriction {
       Restriction._addRulesCounter("RulesForTwo_3", "active");
       const noAvailableLevels = Skyscraper.Levels.slice(level0);
       return this._cells.slice(1, indexMax).every( (cell) => {
+        if ( cell.HasLevel) {
+          return (cell.Level < this._cells[0].Level);
+        }
         cell.removeAvailableLevels(noAvailableLevels);
-        return !cell.HasLevel || (cell.Level < this._cells[0].Level) 
+        if ( cell.checkOneAvailableLevel() ) {
+          return (cell.Level < this._cells[0].Level);
+        }
+        return true;
       });
     }
 
@@ -303,6 +294,7 @@ class Restriction {
       return !!this._cells.slice(0, -1).reduce( (prevCell, currCell) => {
         if (!prevCell) { return false; }
         prevCell.removeAvailableLevels(noAvailableLevels);
+        prevCell.checkOneAvailableLevel();
         noAvailableLevels.shift();
         const isContinue = !(prevCell.HasLevel && currCell.HasLevel) || (prevCell.Level < currCell.Level);
         return isContinue ? currCell : false;
@@ -322,11 +314,7 @@ class Restriction {
         return this._cells.slice(0, -1).every( (cell, index) => cell.setLevel(sortLevels[index]) );
        });
   }
-  // 5> +2 (1) +3 +4 +5 +6 
-  // 5> +2 +3 (1) +4 +5 +6
-  // 5> +2 +3 +4 (1) +5 +6
-  // 5> +2 +3 +4 +5 (1) +6
-  // 5> +2 +3 +5 +5 +6 (1)
+  // 5> +2 (1) +3 +4 +5 +6                                                                                              // 5> +2 +3 (1) +4 +5 +6                                                                                              // 5> +2 +3 +4 (1) +5 +6                                                                                              // 5> +2 +3 +4 +5 (1) +6                                                                                              // 5> +2 +3 +5 +5 +6 (1)
   _setRulesForPreMax_3() {
     this._cells.slice(1).forEach( (cell) => cell.addRules( (level) => {
       Restriction._addRulesCounter("RulesForPreMax_3");
@@ -340,11 +328,7 @@ class Restriction {
 
   _setRulesBarrier() {
     const cells = this._cells;
-
-    // 2> (1) +6 0 0 0 0
-    // 3> (1) (2) +6 0 0 0
-    // 4> (1) (2) (3) +6 0 0
-    // 5> (1) (2) (3) (4) +6 0
+    // 2> (1) +6 0 0 0 0                                                                                                // 3> (1) (2) +6 0 0 0                                                                                              // 4> (1) (2) (3) +6 0 0                                                                                            // 5> (1) (2) (3) (4) +6 0
     const index0 = this.VisibleCount - 1;
     cells.slice(0, index0).forEach( (cell, index, _cells) => cell.addRules( (level) => {
       Restriction._addRulesCounter("RulesBarrier_1");
@@ -354,11 +338,7 @@ class Restriction {
       }
       return result ? cells[index0].setLevel(Skyscraper.MaxLevel) : true;
     }));
-
-    // 2> +5 0 0 0 0 (6)        || 
-    // 3> +4 0 0 0 (5) (6)
-    // 4> +3 0 0 (4) (5) (6)
-    // 5> +2 0 (3) (4) (5) (6)
+    // 2> +5 0 0 0 0 (6)                                                                                                // 3> +4 0 0 0 (5) (6)                                                                                              // 4> +3 0 0 (4) (5) (6)                                                                                            // 5> +2 0 (3) (4) (5) (6)
     const index1 = Skyscraper.MaxLevel - this.VisibleCount + 1;
     cells.slice(1 - this.VisibleCount).forEach( (cell, index, _cells) => cell.addRules( (level) => {
       Restriction._addRulesCounter("RulesBarrier_2");
@@ -370,9 +350,7 @@ class Restriction {
     }));
   }
 
-  /**
-   * Find level in cells and return its position or -1 if don't find.
-   */
+  /** Find level in cells and return its position or -1 if don't find. */
   _findLevelPositionInCells(level, cells, start = 0) {
     for (let ind = start; ind < cells.length; ind++) {
       if (cells[ind].Level === level) { 
@@ -386,6 +364,8 @@ class Restriction {
 class Grid {
   
   constructor(clues = []) {
+    if ( !this._validateSize(clues.length) ) { throw new Error("Wrong grid size!"); }
+
     this._size  = Math.floor(clues.length / 4);
     this._rows  = [ [] ];
     this._cols  = [ [] ];
@@ -400,32 +380,36 @@ class Grid {
   get HasSolution() { return this._cells.every( (cell) => cell.HasLevel ); }
   get Result() { return this._rows.map( (row) => row.map( (cell) => cell.Level ) ); }
   get Counter() { return this._bruteForceCounter; }
-  get NextEmptyCell() { return this.EmptyCells[0]; }
-  get EmptyCells() {
+  get _NextEmptyCell() { return this._EmptyCells[0]; }
+  get _EmptyCells() {
     return this._cells.filter( (cell) => !cell.HasLevel )
                       .sort( (cellA, cellB) => cellA.AvailableLevelsCount - cellB.AvailableLevelsCount);
   }
 
-  static validateSize(length) {
-    return !(length % 4);
-  }
-  
   calculate() {
-    this._calculateByRestrictions();
-    this._findAvailable();
+    let success = false;
+
+    while (true) {
+      let findLevel = false;
+      this._cells.forEach( (cell) => findLevel = this._findOneAvailableLevelInCell(cell) || findLevel );
+      this._rows.forEach( (cells) => findLevel = this._findSingleAvailableLevelInCells(cells) || findLevel );
+      this._cols.forEach( (cells) => findLevel = this._findSingleAvailableLevelInCells(cells) || findLevel );
+      success = success || findLevel;
+      if (!findLevel) { return success; }
+    }   
   }
 
   bruteForce(){
-    const cell = this.NextEmptyCell;
+    const cell = this._NextEmptyCell;
     if (!cell) { return false; }
 
     const levels = cell.AvailableLevels.slice().reverse();
-    for (const level of  levels) {
+    for (const level of levels) {
       this._backup();
 
-      if ( cell.setLevel(level) && this.checkRestrictions() ) {
-        const findAvailableResult = this._findAvailable();
-        const checkRestrictionsResult = !findAvailableResult || this.checkRestrictions();
+      if ( cell.setLevel(level) && this._checkRestrictions() ) {
+        const find = this.calculate();
+        const checkRestrictionsResult = !find || this._checkRestrictions();
         if ( checkRestrictionsResult && this.HasSolution ) { return true; }
         if ( checkRestrictionsResult && this.bruteForce() ) { return true; }
       }
@@ -436,7 +420,11 @@ class Grid {
     return false;
   }
 
-  checkRestrictions() {
+  _validateSize(length) {
+    return !(length % 4);
+  }
+
+  _checkRestrictions() {
     return this._restrictions.every( (restriction) => restriction.check() );
   }
 
@@ -464,48 +452,30 @@ class Grid {
 
     return restrictions;
   }
-
-  _calculateByRestrictions() {
-    this._filterRestrictions();
-    this._restrictions.forEach( (restriction) => restriction.filterAvailableLevels() );
-  }
-  
-  _filterRestrictions() {
-    this._restrictions.forEach( (restriction, index, restrictions) => {
-      if (restriction.VisibleCount === Restriction.MinVisibleCount 
-          || restriction.VisibleCount === Restriction.MaxVisibleCount) {
-            delete restrictions[index];
-          }
-    });
-  }
-
-  _findAvailable() {
-    let findSomething = false;
-
-    while (true) {
-      let findLevel = this._cells.reduce( (find, cell) => this._findOneAvailableLevelInCell(cell) || find, false);
-      findLevel = this._rows.reduce( (find, cells) => this._findSingleAvailableLevelInCells(cells) || find, findLevel );
-      findLevel = this._cols.reduce( (find, cells) => this._findSingleAvailableLevelInCells(cells) || find, findLevel );
-      if (findLevel) { findSomething = true; }
-      else { return findSomething; }
-    }   
-  }
-  
+    
   _findOneAvailableLevelInCell(cell) {
-      return (cell.AvailableLevelsCount === 1) ? cell.setLevel( cell.AvailableLevels[0] ) : false;
+      return (cell.AvailableLevelsCount === 1) ? cell.setLevel(cell.AvailableLevels[0]) : false;
   }
-
+  
   _findSingleAvailableLevelInCells(cells) {
     return Skyscraper.Levels.reduce( (find, level) => {
-      const levelCells = cells.filter( (cell) => cell.hasAvailableLevel(level) );
-      return (levelCells.length === 1) ? levelCells[0].setLevel(level) || find : find;
+      let levelCell = null;
+      
+      for (let cell of cells) {
+        if ( cell.hasAvailableLevel(level) ) {
+          if (levelCell) { return find; }
+          levelCell = cell;
+        }
+      }
+
+      return levelCell && levelCell.setLevel(level) || find;
     }, false);
   }
 
   _backup() {
     this._bruteForceCounter++;
     const map = new Map();
-    this.EmptyCells.forEach( (cell) => map.set(cell, cell.BackupObject) );
+    this._EmptyCells.forEach( (cell) => map.set(cell, cell.BackupObject) );
     this._restrictions.forEach( (restriction) => map.set(restriction, restriction.BackupObject) );
     this._bruteForceStack.push(map);
   }
@@ -518,18 +488,14 @@ class Grid {
 /************************************************************************* */
 
 function solvePuzzle2 (clues) {
-  if ( !Grid.validateSize(clues.length) ) { 
-    console.error("Wrong grid size!");
-    return []; 
-  }
   // console.log(clues);
   console.time('Total');
   const grid = new Grid(clues);
   grid.calculate();
 
   if (!grid.HasSolution) {
-    const result = grid.bruteForce();
-    if (!grid.HasSolution || !grid.checkRestrictions() ) {
+    grid.bruteForce()
+    if ( !grid._checkRestrictions() ) {
       console.warn("No solution, see temp grid:");
       console.log(grid);
       console.log(grid.Result);
@@ -628,8 +594,17 @@ console.log(11);
 // 6.54s       137894      // Anti refactoring
 // 6.54s       137908      // Anti refactoring 2
 // 6.24s       137148      // refactoring restriction rules
+// 5.31s       137129      // refactoring calculate method and turn off RulesForTwo_2
 solvePuzzle2([0,0,5,3,0,2,0, 0,0,0,4,5,0,0, 0,0,0,3,2,5,4, 2,2,0,0,0,0,5]);
 
+// RulesForTwo_1: all: 30200, active: 2753
+// RulesForTwo_2: all: 80594, active: 464
+// RulesForTwo_3: all: 340356, active: 139862
+// RulesForPreMax_1: all: 12, active: 3
+// RulesForPreMax_2: all: 34, active: 30
+// RulesForPreMax_3: all: 168, active: 36
+// RulesBarrier_1: all: 352736, active: 16083
+// RulesBarrier_2: all: 301633, active: 7428
 console.log('RulesCounter:');
 Restriction.rulesCounter.forEach( (counterObj, key) => {
   let result = `${key}:`;
