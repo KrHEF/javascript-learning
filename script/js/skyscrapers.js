@@ -4,6 +4,9 @@ function solvePuzzle (clues) {
   return (grid.HasSolution || grid.bruteForce()) ? grid.Result : [];
 }
 
+const ERROR_STATUS = -1,
+      NOTFOUND_STATUS = 0,
+      FOUND_STATUS = 1;
 class Skyscraper {
   // static _levels: number[];
   
@@ -35,9 +38,9 @@ class Skyscraper {
   }
 
   setLevel(level) {
-    if (this.HasLevel) { return this._level === level; }
-
-    if ( this.hasAvailableLevel(level) ) {
+    if (this.HasLevel) { 
+      return (this._level === level); 
+    } else if ( this.hasAvailableLevel(level) ) {
       this._level = level;
       this._availableLevels.clear();
       return true;
@@ -91,14 +94,9 @@ class Cell {
   }
 
   setLevel(level) {
-    if (this._skyscraper.HasLevel) {
-      return this._skyscraper.setLevel(level);
-    } else if ( this._skyscraper.setLevel(level) ) {
-      this._removeAvailableLevelFromSibling(level);
-      return this._checkRules(level);
-    } else {
-      return false;
-    }
+    if (this._skyscraper.HasLevel) { return (this.Level === level); }
+    if ( this._skyscraper.setLevel(level) ) { return this._setAvailableForSiblings(level) && this._checkRules(level); }
+    return false;
   }
 
   addRules(rules) {
@@ -118,13 +116,16 @@ class Cell {
     this._skyscraper.removeAvailableLevels(levels);
   }
 
-  checkOneAvailableLevel() {
-    return false;
-    return (this.AvailableLevelsCount === 1) ? this.setLevel(this.AvailableLevels[0]) : false;
+  findLevelInAvailable() {
+    return (this.AvailableLevelsCount === 1) ? this.AvailableLevels[0] : Skyscraper.NO_LEVEL;
   }
 
-  _removeAvailableLevelFromSibling(level) {
+  _setAvailableForSiblings(level) {
     this._siblingCells.forEach( (cell) => cell.removeAvailableLevels(level) );
+    return this._siblingCells.every( (cell) => {
+      const levelFromAvailable = cell.findLevelInAvailable();
+      return levelFromAvailable ? cell.setLevel(levelFromAvailable) : true;
+    })
   }
 
   _checkRules(level) {
@@ -203,8 +204,7 @@ class Restriction {
         break;
       case Restriction.MinVisibleCount + 1: // 2
         this._removeAvailableLevels();
-        this._cells[1].removeAvailableLevels(Skyscraper.MaxLevel - 1);
-        this._cells[1].checkOneAvailableLevel();
+        this._removeAvailableLevelForTwo();
         this._setRulesForTwo_1();
         this._setRulesForTwo_2();
         this._setRulesForTwo_3();
@@ -227,12 +227,23 @@ class Restriction {
     }
   }
 
+  // 2> 0 -5 0 0 0 0
+  _removeAvailableLevelForTwo() {
+    this._cells[1].removeAvailableLevels(Skyscraper.MaxLevel - 1);
+    const levelFromAvailable = this._cells[1].findLevelInAvailable();
+    if (levelFromAvailable) {
+      this._cells[1].setLevel(levelFromAvailable);
+    }
+  }
   // 5> -6 -6 -6 -6 0 0    &&    -5 -5 -5 0 0 0    &&    -4 -4 0 0 0 0    &&    -3 0 0 0 0 0                            // 4> -6 -6 -6 0 0 0     &&    -5 -5 0 0 0 0     &&    -4 0 0 0 0 0                                                   // 3> -6 -6 0 0 0 0      &&    -5 0 0 0 0 0                                                                           // 2> -6 0 0 0 0 0
   _removeAvailableLevels() {
     for (let ind = 0; ind <= this.VisibleCount - 2; ind++) {
       for (let lvl = Skyscraper.MaxLevel - (this.VisibleCount - 2) + ind; lvl <= Skyscraper.MaxLevel; lvl++) {
         this._cells[ind].removeAvailableLevels(lvl);
-        this._cells[ind].checkOneAvailableLevel();
+        const levelFromAvailable = this._cells[ind].findLevelInAvailable();
+        if ( levelFromAvailable ) {
+          this._cells[ind].setLevel(levelFromAvailable);
+        }
       }
     }
   }
@@ -242,8 +253,9 @@ class Restriction {
       Restriction._addRulesCounter("RulesForTwo_1");
       if (level === (Skyscraper.MaxLevel - 1)) {
         Restriction._addRulesCounter("RulesForTwo_1", "active");
-        return this._cells[1].setLevel(level);
-      } else { return true; }
+        return this._cells[1].setLevel(Skyscraper.MaxLevel);
+      }
+      return true;
     });
   };
   // 2> (2) +1 (6) 0 0 0 
@@ -268,14 +280,11 @@ class Restriction {
       Restriction._addRulesCounter("RulesForTwo_3", "active");
       const noAvailableLevels = Skyscraper.Levels.slice(level0);
       return this._cells.slice(1, indexMax).every( (cell) => {
-        if ( cell.HasLevel) {
-          return (cell.Level < this._cells[0].Level);
-        }
+        if (cell.HasLevel) { return (cell.Level < this._cells[0].Level); }
         cell.removeAvailableLevels(noAvailableLevels);
-        if ( cell.checkOneAvailableLevel() ) {
-          return (cell.Level < this._cells[0].Level);
-        }
-        return true;
+        const levelFromAvailable = cell.findLevelInAvailable();
+        if (!levelFromAvailable) { return true; }
+        return (levelFromAvailable < this._cells[0].Level) && cell.setLevel(levelFromAvailable);
       });
     }
 
@@ -294,7 +303,8 @@ class Restriction {
       return !!this._cells.slice(0, -1).reduce( (prevCell, currCell) => {
         if (!prevCell) { return false; }
         prevCell.removeAvailableLevels(noAvailableLevels);
-        prevCell.checkOneAvailableLevel();
+        const levelFromAvailable = prevCell.findLevelInAvailable();
+        if (levelFromAvailable && !prevCell.setLevel(levelFromAvailable) ) { return false; }
         noAvailableLevels.shift();
         const isContinue = !(prevCell.HasLevel && currCell.HasLevel) || (prevCell.Level < currCell.Level);
         return isContinue ? currCell : false;
@@ -353,16 +363,14 @@ class Restriction {
   /** Find level in cells and return its position or -1 if don't find. */
   _findLevelPositionInCells(level, cells, start = 0) {
     for (let ind = start; ind < cells.length; ind++) {
-      if (cells[ind].Level === level) { 
-        return ind; 
-      }
+      if (cells[ind].Level === level) { return ind; }
     }
     return -1;
   }
 }
 
 class Grid {
-  
+
   constructor(clues = []) {
     if ( !this._validateSize(clues.length) ) { throw new Error("Wrong grid size!"); }
 
@@ -387,16 +395,24 @@ class Grid {
   }
 
   calculate() {
-    let success = false;
+    let result = NOTFOUND_STATUS,
+        status,
+        exit = false;
 
-    while (true) {
-      let findLevel = false;
-      this._cells.forEach( (cell) => findLevel = this._findOneAvailableLevelInCell(cell) || findLevel );
-      this._rows.forEach( (cells) => findLevel = this._findSingleAvailableLevelInCells(cells) || findLevel );
-      this._cols.forEach( (cells) => findLevel = this._findSingleAvailableLevelInCells(cells) || findLevel );
-      success = success || findLevel;
-      if (!findLevel) { return success; }
-    }   
+    while (!exit) {
+      exit = true;
+      for (let cells of this._rows) {
+        status = this._findLevelByAvailable(cells);
+        if (status === ERROR_STATUS) { return ERROR_STATUS; }
+        if (status === FOUND_STATUS) { result = FOUND_STATUS; exit = false; }
+       }
+      for (let cells of this._cols) {
+        find = this._findLevelByAvailable(cells);
+        if (find === ERROR_STATUS) { return ERROR_STATUS; }
+        if (find === FOUND_STATUS) { result = FOUND_STATUS; exit = false; }
+      }
+    }
+    return result;
   }
 
   bruteForce(){
@@ -408,10 +424,12 @@ class Grid {
       this._backup();
 
       if ( cell.setLevel(level) && this._checkRestrictions() ) {
-        const find = this.calculate();
-        const checkRestrictionsResult = !find || this._checkRestrictions();
-        if ( checkRestrictionsResult && this.HasSolution ) { return true; }
-        if ( checkRestrictionsResult && this.bruteForce() ) { return true; }
+        const status = this.calculate();
+        if (status !== ERROR_STATUS) {
+          const checkRestrictionsResult = (status === NOTFOUND_STATUS) || this._checkRestrictions();
+          if ( checkRestrictionsResult && this.HasSolution ) { return true; }
+          if ( checkRestrictionsResult && this.bruteForce() ) { return true; }
+        }
       }
 
       this._rollback();
@@ -452,24 +470,31 @@ class Grid {
 
     return restrictions;
   }
-    
-  _findOneAvailableLevelInCell(cell) {
-      return (cell.AvailableLevelsCount === 1) ? cell.setLevel(cell.AvailableLevels[0]) : false;
-  }
-  
-  _findSingleAvailableLevelInCells(cells) {
-    return Skyscraper.Levels.reduce( (find, level) => {
+      
+  /** Find level from available in cells
+   * @returns {number} 1: find, 0: don't find, (-1): error
+   */
+  _findLevelByAvailable(cells) {
+    let result = NOTFOUND_STATUS;
+
+    for (let level of Skyscraper.Levels) {
       let levelCell = null;
       
       for (let cell of cells) {
         if ( cell.hasAvailableLevel(level) ) {
-          if (levelCell) { return find; }
+          if (levelCell) { 
+            levelCell = null;
+            break; 
+          }
           levelCell = cell;
         }
       }
-
-      return levelCell && levelCell.setLevel(level) || find;
-    }, false);
+      if (levelCell) { 
+        result = FOUND_STATUS; 
+        if ( !levelCell.setLevel(level) ) { return ERROR_STATUS; }
+      }
+    }
+    return result;
   }
 
   _backup() {
@@ -494,8 +519,8 @@ function solvePuzzle2 (clues) {
   grid.calculate();
 
   if (!grid.HasSolution) {
-    grid.bruteForce()
-    if ( !grid._checkRestrictions() ) {
+    grid.bruteForce();
+    if ( !grid.HasSolution || !grid._checkRestrictions() ) {
       console.warn("No solution, see temp grid:");
       console.log(grid);
       console.log(grid.Result);
@@ -530,6 +555,7 @@ console.log(7);
 // 0.03s     544     // correct check restriction
 // 0.03s     397     // correct brute force
 // 0.05s     395     // refactoring restriction rules
+// 0.03s     395     // add find one available after remove available in cell
 solvePuzzle2([7,0,0,0,2,2,3, 0,0,3,0,0,0,0, 3,0,3,0,0,5,0, 0,0,0,0,5,0,4]);
 
 console.log(8);
@@ -548,6 +574,7 @@ console.log(8);
 // 0.03s      339     // Anti refactoring
 // 0.04s      401     // refactoring restriction rules
 // 0.06s      336     // refactoring restriction rules
+// 0.02s      295     // add find one available after remove available in cell
 solvePuzzle2([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1]);
 
 console.log(9);
@@ -567,6 +594,7 @@ console.log(9);
 // 0.05s      592      // correct brute force
 // 0.05s      594      // Anti refactoring
 // 0.05s      587      // refactoring restriction rules
+// 0.02s      557      // add find one available after remove available in cell
 solvePuzzle2([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 0,0,0,0,0,0,0]);
 
 
@@ -581,6 +609,7 @@ console.log(10);
 // 0.05s     585       // correct brute force
 // 0.06s     700       // refactoring restriction rules
 // 0.05s     591       // refactoring restriction rules
+// 0.03s     585       // add find one available after remove available in cell
 solvePuzzle2([6,4,0,2,0,0,3, 0,3,3,3,0,0,4, 0,5,0,5,0,2,0, 0,0,0,4,0,0,3]);
 
 
@@ -595,16 +624,25 @@ console.log(11);
 // 6.54s       137908      // Anti refactoring 2
 // 6.24s       137148      // refactoring restriction rules
 // 5.31s       137129      // refactoring calculate method and turn off RulesForTwo_2
+// 1.60s       54697       // add find one available after remove available in cell
 solvePuzzle2([0,0,5,3,0,2,0, 0,0,0,4,5,0,0, 0,0,0,3,2,5,4, 2,2,0,0,0,0,5]);
 
 // RulesForTwo_1: all: 30200, active: 2753
+// RulesForTwo_1: all: 11833, active: 1824
 // RulesForTwo_2: all: 80594, active: 464
+// RulesForTwo_2: all: 26068, active: 299
 // RulesForTwo_3: all: 340356, active: 139862
+// RulesForTwo_3: all: 87603, active: 39033
 // RulesForPreMax_1: all: 12, active: 3
+// RulesForPreMax_1: all: 10, active: 3
 // RulesForPreMax_2: all: 34, active: 30
+// RulesForPreMax_2: all: 56, active: 52
 // RulesForPreMax_3: all: 168, active: 36
+// RulesForPreMax_3: all: 135, active: 27
 // RulesBarrier_1: all: 352736, active: 16083
+// RulesBarrier_1: all: 94486, active: 4980
 // RulesBarrier_2: all: 301633, active: 7428
+// RulesBarrier_2: all: 81300, active: 894
 console.log('RulesCounter:');
 Restriction.rulesCounter.forEach( (counterObj, key) => {
   let result = `${key}:`;
