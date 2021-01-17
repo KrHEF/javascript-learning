@@ -1,3 +1,5 @@
+'use strict'
+
 function solvePuzzle (clues) {
   const grid = new Grid(clues);
   grid.calculate();
@@ -64,7 +66,7 @@ class Cell {
     this._skyscraper = new Skyscraper();
     this._colIndex = colIndex;
     this._rowIndex = rowIndex;
-    this._siblingCells = [];
+    this._siblings = [];
     this._rules = []; 
   }
 
@@ -81,6 +83,9 @@ class Cell {
   get AvailableLevels() { return this._skyscraper.AvailableLevels; }
   get AvailableLevelsCount() { return this._skyscraper.AvailableLevelsCount; }
   get MaxAvailableLevel() { return this._skyscraper.MaxAvailableLevel; }
+  get EmptySiblingsCount() {
+    return this._siblings.reduce( (result, cell) => cell.HasLevel ? result : result +1, 0);
+  }
 
   static create(size) {
     Skyscraper.Levels = size;
@@ -105,7 +110,7 @@ class Cell {
   }
 
   setSiblings(allCells) {
-    this._siblingCells = allCells.filter( (cell) => (cell !== this) && (cell.ColIndex === this.ColIndex || cell.RowIndex === this.RowIndex) );
+    this._siblings = allCells.filter( (cell) => (cell !== this) && (cell.ColIndex === this.ColIndex || cell.RowIndex === this.RowIndex) );
   }
 
   hasAvailableLevel(level) {
@@ -121,8 +126,8 @@ class Cell {
   }
 
   _setAvailableForSiblings(level) {
-    this._siblingCells.forEach( (cell) => cell.removeAvailableLevels(level) );
-    return this._siblingCells.every( (cell) => {
+    this._siblings.forEach( (cell) => cell.removeAvailableLevels(level) );
+    return this._siblings.every( (cell) => {
       const levelFromAvailable = cell.findLevelInAvailable();
       return levelFromAvailable ? cell.setLevel(levelFromAvailable) : true;
     })
@@ -390,8 +395,7 @@ class Grid {
   get Counter() { return this._bruteForceCounter; }
   get _NextEmptyCell() { return this._EmptyCells[0]; }
   get _EmptyCells() {
-    return this._cells.filter( (cell) => !cell.HasLevel )
-                      .sort( (cellA, cellB) => cellA.AvailableLevelsCount - cellB.AvailableLevelsCount);
+    return this._cells.filter( (cell) => !cell.HasLevel ).sort(this._sortEmptyCells);
   }
 
   calculate() {
@@ -407,9 +411,9 @@ class Grid {
         if (status === FOUND_STATUS) { result = FOUND_STATUS; exit = false; }
        }
       for (let cells of this._cols) {
-        find = this._findLevelByAvailable(cells);
-        if (find === ERROR_STATUS) { return ERROR_STATUS; }
-        if (find === FOUND_STATUS) { result = FOUND_STATUS; exit = false; }
+        status = this._findLevelByAvailable(cells);
+        if (status === ERROR_STATUS) { return ERROR_STATUS; }
+        if (status === FOUND_STATUS) { result = FOUND_STATUS; exit = false; }
       }
     }
     return result;
@@ -440,6 +444,14 @@ class Grid {
 
   _validateSize(length) {
     return !(length % 4);
+  }
+
+  _sortEmptyCells(cellA, cellB) {
+    return cellA.AvailableLevelsCount - cellB.AvailableLevelsCount;
+    
+    // return (cellA.AvailableLevelsCount !== cellB.AvailableLevelsCount) ? 
+    //        (cellA.AvailableLevelsCount - cellB.AvailableLevelsCount) :
+    //        (cellA.EmptySiblingsCount - cellB.EmptySiblingsCount);
   }
 
   _checkRestrictions() {
