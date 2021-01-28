@@ -49,29 +49,9 @@ function  sumK2(koef) {
 }
 
 function getKoef(n, m) {
-  // const size = Math.max(m - n, n - 2),
-        // koef = ( new Array(size) ).fill( new BigNumber(1) ),
   const koef1 = ( new Array(m - n) ).fill( new BigNumber(1) ), 
         koef2 = ( new Array(n - 2) ).fill( new BigNumber(1) );
-        // sum  = ( new Array(n - 2) ).fill( new BigNumber(0) );
   let sum1 = 0;  
-
-  // const count1 = n - 3,
-        // count2 = m - n - 1;
-
-  // for (let i = 0; i <= Math.max(count1, count2); i++) {
-  //   if (i === count1) { 
-  //     koef1 = koef.slice(0, koef1.length);
-  //   } 
-  //   if (i === count2) {
-  //     koef2 = koef.slice(0, koef2.length);
-  //     sum1 = sum[koef2.length - 1];
-  //   }
-  //   for (let j = 0; j < koef.length; j++) {
-  //     koef[j] = !j ? koef[j] : koef[j].plus(koef[j - 1]);
-  //     sum[j] = !j ? sum[j].plus(1) : sum[j].plus(sum[j - 1]).plus(1);
-  //   }
-  // }
 
   console.time('koef1');
   for (let i = 4; i <= n; i++) {
@@ -90,9 +70,6 @@ function getKoef(n, m) {
   console.timeEnd('koef2');
  
   sum1 = koef1.reduce( (sum, k) => sum.plus(k) ).minus(1);
-
-  // sum[0] = sum[0].plus(1);
-  // sum[j] = sum[j].plus(sum[j - 1]).plus(1);
 
   return { koef1, koef2: koef2.reverse(), sum1 };
 }
