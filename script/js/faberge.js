@@ -1,11 +1,14 @@
 'use strict';
 
+// let result = [];
+
 function height(n,m) {
-    if (n > m) { n = m; }
     if (n <= 0 ) { return 0; }
     if ((m < 2) || (n === 1)) { return m; }
-    if (n === m) { return (new BigNumber(2)).pow(n).minus(1); }
+    if (n >= m) { return (new BigNumber(2)).pow(m).minus(1); }
     if (n === 2) { return sum2(m); }
+
+    BigNumber.config({ DECIMAL_PLACES: 0 });
 
     console.time('Total');
     const { koef1, koef2, sum1 } = getKoef(n, m);
@@ -13,7 +16,7 @@ function height(n,m) {
     
     const sumResult = sumK1(koef1).plus( sumK2(koef2) );
 
-    const result = sumResult.plus(sum1);
+    const result = sumResult.plus(sum1).minus(1);
     console.timeEnd('Total');
     console.log(`(n,m) = (${n},${m}), result = ${result.toString()}`);
     console.log('======================');
@@ -27,21 +30,20 @@ function sum2(n) {
 function  sumK1(koef) {
   let result = new BigNumber(0);
   
-  for (let i = 0; i < koef.length; i++) {
-    const k = koef[i].times( sum2(koef.length + 2 - i) ); 
-    result = result.plus(k);
+  for (let i = koef.length - 1, j = 2, sum2 = 3; i >= 0; i--, j++) {
+    sum2 += j + 1; 
+    result = result.plus( koef[i].times(sum2) );
   }
 
   return result;
 }
 
 function  sumK2(koef) {
-  let result = new BigNumber(0),
-      two = new BigNumber(2);
+  let result = new BigNumber(0);
 
-  for (let i = 0; i < koef.length; i++) {
-    const k = koef[i].times( two.pow( i + 3) ) ; 
-    result = result.plus(k);
+  for (let i = 0, pow2 = new BigNumber(4); i < koef.length; i++) {
+    pow2 = pow2.times(2);
+    result = result.plus( koef[i].times(pow2) );
   }
 
   return result;
@@ -80,7 +82,8 @@ function getKoef(n, m) {
 
   console.timeEnd('koef');
 
-  sum1 = koef1.reduce( (sum, k) => sum.plus(k) ).minus(1);
+  sum1 = BigNumber.sum(...koef1);
+  // sum1 = koef1.reduce( (sum, k) => sum.plus(k) );
 
   return { koef1, koef2: koef2.reverse(), sum1 };
 }
@@ -98,14 +101,14 @@ height(500,500).toString();
 height(237,500).toString();
 height(477,500).toString();
 
-//16.7 s
-//6.77 s
-//4.90 s
+//16.7s
+//6.77s
+//6.87s 4.90s
 height(477,10000).toString();
 
-//91.9 s
-//62.5 s
+//91.9s
+//80.0s 62.5s
 height(4477,10000).toString();
 
-//11.0 s
+//12.3s 11.0 s
 height(9477,10000).toString();
