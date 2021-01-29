@@ -4,19 +4,14 @@
 
 function height(n,m) {
     if (n <= 0 ) { return 0; }
-    if ((m < 2) || (n === 1)) { return m; }
-    if (n >= m) { return (new BigNumber(2)).pow(m).minus(1); }
+    if ((m < 2) || (n === 1)) { return m; }3
+    if (n >= m) { return sumDiagonal(m); }
     if (n === 2) { return sum2(m); }
 
     BigNumber.config({ DECIMAL_PLACES: 0 });
 
     console.time('Total');
-    const { koef1, koef2, sum1 } = getKoef(n, m);
-    // console.log(`(n,m) = (${n},${m}), koef1 = ${koef1.toString()}, koef2 = ${koef2.toString()}, sum1 = ${sum1.toString()}`);
-    
-    const sumResult = sumK1(koef1).plus( sumK2(koef2) );
-
-    const result = sumResult.plus(sum1).minus(1);
+    const result = faberge(n, m);
     console.timeEnd('Total');
     console.log(`(n,m) = (${n},${m}), result = ${result.toString()}`);
     console.log('======================');
@@ -25,6 +20,27 @@ function height(n,m) {
 
 function sum2(n) {
   return (new BigNumber(n)).pow(2).plus(n).div(2);
+}
+
+function sumDiagonal(m) {
+  return (new BigNumber(2)).pow(m).minus(1);
+}
+
+function faberge(n, m) {
+  let result = [],
+      prevJ;
+  // n < m
+  for (let i = 2; i <= n; i++) {
+    result[1] = new BigNumber(i);
+    prevJ = result[1];
+    for (let j = 2; j <= i - 1; j++) {
+      result[j] = result[j].plus(prevJ).plus(1);
+      prevJ = result[j];
+    }
+    result[i] = sumDiagonal(i);
+  }
+  console.log(result);
+  return result.pop();
 }
 
 function  sumK1(koef) {
@@ -97,9 +113,9 @@ height(7,5).toString();
 height(2,14).toString();
 height(7,20).toString();
 height(7,500).toString();
-height(500,500).toString();
-height(237,500).toString();
-height(477,500).toString();
+// height(500,500).toString();
+// height(237,500).toString();
+// height(477,500).toString();
 
 //16.7s
 //6.77s
@@ -111,4 +127,4 @@ height(477,10000).toString();
 height(4477,10000).toString();
 
 //12.3s 11.0 s
-height(9477,10000).toString();
+// height(9477,10000).toString();
