@@ -3,109 +3,286 @@
 // let result = [];
 
 function height(n,m) {
-    if (n <= 0 ) { return 0; }
-    if ((m < 2) || (n === 1)) { return m; }3
-    if (n >= m) { return sumDiagonal(m); }
-    if (n === 2) { return sum2(m); }
+    // if (n <= 0 ) { return 0; }
+    // if ((m < 2) || (n === 1)) { return m; }3
+    // if (n >= m) { return sumDiagonal(m); }
+    // if (n === 2) { return sum2(m); }
 
-    BigNumber.config({ DECIMAL_PLACES: 0 });
 
     console.time('Total');
-    const result = faberge(n, m);
+    // const result = faberge(n, m);
+    const fab = new Faberge(n, m);
+    const result = fab.getSolution();
     console.timeEnd('Total');
-    console.log(`(n,m) = (${n},${m}), result = ${result.toString()}`);
-    console.log('======================');
+    console.log(`(n,m) = (${n},${m}), count: ${fab.Count}, result = ${result.toString()}`);
+    console.log(`=========================================`);
     return result;
 }
 
-function sum2(n) {
-  return (new BigNumber(n)).pow(2).plus(n).div(2);
-}
-
-function sumDiagonal(m) {
-  return (new BigNumber(2)).pow(m).minus(1);
-}
-
-function faberge(n, m) {
-  let result = [],
-      prevJ;
-  // n < m
-  for (let i = 2; i <= n; i++) {
-    result[1] = new BigNumber(i);
-    prevJ = result[1];
-    for (let j = 2; j <= i - 1; j++) {
-      result[j] = result[j].plus(prevJ).plus(1);
-      prevJ = result[j];
-    }
-    result[i] = sumDiagonal(i);
-  }
-  console.log(result);
-  return result.pop();
-}
-
-function  sumK1(koef) {
-  let result = new BigNumber(0);
+class Faberge {
   
-  for (let i = koef.length - 1, j = 2, sum2 = 3; i >= 0; i--, j++) {
-    sum2 += j + 1; 
-    result = result.plus( koef[i].times(sum2) );
+  constructor(n, m) {
+    BigNumber.config({ DECIMAL_PLACES: 0 });
+    this._n = (n > m) ? m : n;
+    this._m = m;
+    this._solution = 0;
+    this._count = 0;
   }
 
-  return result;
-}
+  get Count() { return this._count; }
 
-function  sumK2(koef) {
-  let result = new BigNumber(0);
-
-  for (let i = 0, pow2 = new BigNumber(4); i < koef.length; i++) {
-    pow2 = pow2.times(2);
-    result = result.plus( koef[i].times(pow2) );
+  getSolution() {
+    if ( this._checkSimpleSolutions() ) { return this._solution; }
+    const mode = this._getMode();   // 0 - недалеко от диагонали // 1 - до середины (m-2/2) // 2 - за серединой
+    switch (mode) {
+      case 1: return this._getSolution1();
+      case 2: return this._getSolution2();
+      case 3: return this._getSolution3();
+      default: return 0;
+    }
   }
 
-  return result;
-}
+  _getMode() {
+    if (this._m - this._n + 2 < this._n) { return 1; }
+    if (this._n <= (this._m - 2 / 2) ) { return 2; }
+    return 3;
+  }
 
-function getKoef(n, m) {
-  const size = Math.max(m - n, n - 2),
-        count1 = n - 4,       // for (let i = 4; i <= n; i++) {...}
-        count2 = m - n - 2,   // for (let i = n + 2; i <= m; i++) {...}
-        countMin = (count1 < count2) ? count1 : count2,
-        countMax = (count1 < count2) ? count2 : count1;
+  _getSolution1() {
+    let result = [],
+        prev,
+        prevJ,
+        countStage1 = this._m - this._n + 2,
+        countStage2 = this._n,
+        countStage3 = this._m,
+        countDiagonal = 3;
 
-  let sum1 = 0,
-      koef = ( new Array(size) ).fill( new BigNumber(1) ),
-      koef1 = new Array(m - n), 
-      koef2 = new Array(n - 2);
+    for (let i = 2; i <= countStage1; i++) {
+      result[1] = new BigNumber(i);
+      for (let j = 2; j < i; j++) {
+        prev = prevJ;
+        prevJ = result[j];
+        result[j] = result[j].plus(prev).plus(1);
+        this._count++;
+      }
+      result[i] = this._sumDiagonal(i);
+      prevJ = result[1];
+    }
+
+    for (let i = countStage1 + 1; i <= countStage2; i++) {
+      prevJ = result[countDiagonal - 1];
+      for (let j = countDiagonal; j < i; j++) {
+        prev = prevJ;
+        prevJ = result[j];
+        result[j] = result[j].plus(prev).plus(1);
+        this._count++;
+      }
+      countDiagonal++;
+      result[i] = this._sumDiagonal(i);
+    }
+
+    for (let i = countStage2 + 1; i <= countStage3; i++) {
+      prevJ = result[countDiagonal - 1];
+      for (let j = countDiagonal; j <= this._n; j++) {
+        prev = prevJ;
+        prevJ = result[j];
+        result[j] = result[j].plus(prev).plus(1);
+        this._count++;
+      }
+       countDiagonal++;
+    }
   
-  console.time('koef');
-
-  for (let i = 0; i <= countMin; i++) {
-    for (let j = 1; j < koef.length; j++) {
-      koef[j] = koef[j].plus(koef[j - 1]);
-    }
+    return result[result.length - 1];
   }
 
-  koef1 = koef.slice(0, koef1.length);
-  koef2 = koef.slice(0, koef2.length);
-
-  koef = (count1 < count2) ? koef2 : koef1;
-
-  for (let i = countMin + 1; i <= countMax; i++) {
-    for (let j = 1; j < koef.length; j++) {
-      koef[j] = koef[j].plus(koef[j - 1]);
-    }
+  _getSolution2() {
+    this._count = -1;
+    return 0;
   }
 
-  console.timeEnd('koef');
+  _getSolution3() {
+    // this._count = -1;
+    // return 0;
 
-  sum1 = BigNumber.sum(...koef1);
-  // sum1 = koef1.reduce( (sum, k) => sum.plus(k) );
+    let result = [],
+        prev,
+        prevJ,
+        countStage1 = this._n,
+        countStage2 = this._m - this._n + 2,
+        countStage3 = this._m,
+        countDiagonal = 3;
 
-  return { koef1, koef2: koef2.reverse(), sum1 };
+    for (let i = 2; i <= countStage1; i++) {
+      result[1] = new BigNumber(i);
+      for (let j = 2; j < i; j++) {
+        prev = prevJ;
+        prevJ = result[j];
+        result[j] = result[j].plus(prev).plus(1);
+        this._count++;
+      }
+      result[i] = sumDiagonal(i);
+      prevJ = result[1];
+    }
+
+    for (let i = countStage1 + 1; i <= countStage2; i++) {
+      prevJ = result[1];
+      result[1] = new BigNumber(i);
+      for (let j = 2; j <= this._n; j++) {
+        prev = prevJ;
+        prevJ = result[j];
+        result[j] = result[j].plus(prev).plus(1);
+        this._count++;
+      }
+    }
+    for (let i = countStage2 + 1; i <= countStage3; i++) {
+      prevJ = result[countDiagonal - 1];
+      for (let j = countDiagonal; j <= this._n; j++) {
+        prev = prevJ;
+        prevJ = result[j];
+        result[j] = result[j].plus(prev).plus(1);
+        this._count++;
+      }
+       countDiagonal++;
+    }
+  
+    return result[result.length - 1];  
+  }
+
+  faberge(n, m) {
+    let result = [],
+        prevJ,
+        countStage1,
+        countStage2,
+        countDiagonal = 3;
+    // n < m
+  
+    if  (m - n + 2 < n) {
+      countStage1 = m - n + 2;
+      countStage2 = n;
+      for (let i = 2; i <= countStage1; i++) {
+        result[1] = new BigNumber(i);
+        for (let j = 2; j < i; j++) {
+          const prev = prevJ;
+          prevJ = result[j];
+          result[j] = result[j].plus(prev).plus(1);
+        }
+        result[i] = sumDiagonal(i);
+        prevJ = result[1];
+      }
+  
+      for (let i = countStage1 + 1; i <= countStage2; i++) {
+        prevJ = result[countDiagonal - 1];
+        for (let j = countDiagonal; j < i; j++) {
+          const prev = prevJ;
+          prevJ = result[j];
+          result[j] = result[j].plus(prev).plus(1);
+        }
+        countDiagonal++;
+        result[i] = sumDiagonal(i);
+      }
+    } else {
+      countStage1 = n;
+      countStage2 = m - n + 2;
+      for (let i = 2; i <= countStage1; i++) {
+        result[1] = new BigNumber(i);
+        for (let j = 2; j < i; j++) {
+          const prev = prevJ;
+          prevJ = result[j];
+          result[j] = result[j].plus(prev).plus(1);
+        }
+        result[i] = sumDiagonal(i);
+        prevJ = result[1];
+      }
+  
+      for (let i = countStage1 + 1; i <= countStage2; i++) {
+        prevJ = result[1];
+        result[1] = new BigNumber(i);
+        for (let j = 2; j <= n; j++) {
+          const prev = prevJ;
+          prevJ = result[j];
+          result[j] = result[j].plus(prev).plus(1);
+        }
+      }
+    }
+    
+    for (let i = countStage2 + 1; i <= m; i++) {
+      prevJ = result[countDiagonal - 1];
+      for (let j = countDiagonal; j <= n; j++) {
+        const prev = prevJ;
+        prevJ = result[j];
+        result[j] = result[j].plus(prev).plus(1);
+      }
+      countDiagonal++;
+    }
+  
+    console.log(result);
+    return result[result.length - 1];
+  }
+  
+  _checkSimpleSolutions() {
+    let result = false;
+    if (this._n <= 0 ) { 
+      result = true;
+      this._solution = 0; 
+    } else if ((this._m < 2) || (this._n === 1)) { 
+      result = true;      
+      this._solution = this._m;
+    } else if (this._n === 2) { 
+      result = true;
+      this._solution = this._sum2(this._m); 
+    } else if (this._m - this._n <= 2) {
+      result = true;
+      switch (this._m - this._n) {
+        case 0:
+          this._solution = this._sumDiagonal(this._m);
+          break;
+        case 1:
+          this._solution = this._sumDiagonal_1(this._m);
+          break;
+        case 2:
+          this._solution = this._sumDiagonal_2(this._m);
+          break;
+      }
+    } else if ((this._m % 2 === 1) && (this._n === (this._m - 1) / 2)) {
+      result = true;
+      this._solution = this._sumHalfDiagonal(this._m);
+    }
+    return result;
+  }
+
+  _sum2(m) {
+    return (new BigNumber(m)).pow(2).plus(m).div(2);
+  }
+  
+  _sumDiagonal(m) {
+    return (new BigNumber(2)).pow(m).minus(1);
+  }
+  
+  _sumDiagonal_1(m) {
+    return this._sumDiagonal(m).minus(1);
+  }
+  
+  _sumDiagonal_2(m) {
+    return this._sumDiagonal_1(m).minus(m);
+  }
+
+  _sumHalfDiagonal(m) {
+    return this._sumDiagonal_2(m).plus(m).div(2);
+  }
 }
 
 
-height(3,5).toString();
+height(-1,20).toString(); // 0
+height(0,21).toString();  // 0
+height(1,10).toString();  // 10
+height(12,1).toString();  // 1
+height(2,20).toString();  // 210
+height(4,9).toString();   // 255
+height(8,10).toString();  // 1012
+height(10,11).toString(); // 2046
+height(12,12).toString(); // 4095
+
+height(3,5).toString();   // 25
 height(5,8).toString();
 height(5,9).toString();
 height(6,5).toString();
@@ -113,9 +290,9 @@ height(7,5).toString();
 height(2,14).toString();
 height(7,20).toString();
 height(7,500).toString();
-// height(500,500).toString();
-// height(237,500).toString();
-// height(477,500).toString();
+height(500,500).toString();
+height(237,500).toString();
+height(477,500).toString();
 
 //16.7s
 //6.77s
@@ -127,4 +304,4 @@ height(477,10000).toString();
 height(4477,10000).toString();
 
 //12.3s 11.0 s
-// height(9477,10000).toString();
+height(9477,10000).toString();
