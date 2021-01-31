@@ -134,6 +134,7 @@ class Faberge {
         this._count++;
       }
     }
+
     for (let i = countStage2 + 1; i <= countStage3; i++) {
       prevJ = result[countDiagonal - 1];
       for (let j = countDiagonal; j <= this._n; j++) {
@@ -148,77 +149,6 @@ class Faberge {
     return result[result.length - 1];  
   }
 
-  faberge(n, m) {
-    let result = [],
-        prevJ,
-        countStage1,
-        countStage2,
-        countDiagonal = 3;
-    // n < m
-  
-    if  (m - n + 2 < n) {
-      countStage1 = m - n + 2;
-      countStage2 = n;
-      for (let i = 2; i <= countStage1; i++) {
-        result[1] = new BigNumber(i);
-        for (let j = 2; j < i; j++) {
-          const prev = prevJ;
-          prevJ = result[j];
-          result[j] = result[j].plus(prev).plus(1);
-        }
-        result[i] = sumDiagonal(i);
-        prevJ = result[1];
-      }
-  
-      for (let i = countStage1 + 1; i <= countStage2; i++) {
-        prevJ = result[countDiagonal - 1];
-        for (let j = countDiagonal; j < i; j++) {
-          const prev = prevJ;
-          prevJ = result[j];
-          result[j] = result[j].plus(prev).plus(1);
-        }
-        countDiagonal++;
-        result[i] = sumDiagonal(i);
-      }
-    } else {
-      countStage1 = n;
-      countStage2 = m - n + 2;
-      for (let i = 2; i <= countStage1; i++) {
-        result[1] = new BigNumber(i);
-        for (let j = 2; j < i; j++) {
-          const prev = prevJ;
-          prevJ = result[j];
-          result[j] = result[j].plus(prev).plus(1);
-        }
-        result[i] = sumDiagonal(i);
-        prevJ = result[1];
-      }
-  
-      for (let i = countStage1 + 1; i <= countStage2; i++) {
-        prevJ = result[1];
-        result[1] = new BigNumber(i);
-        for (let j = 2; j <= n; j++) {
-          const prev = prevJ;
-          prevJ = result[j];
-          result[j] = result[j].plus(prev).plus(1);
-        }
-      }
-    }
-    
-    for (let i = countStage2 + 1; i <= m; i++) {
-      prevJ = result[countDiagonal - 1];
-      for (let j = countDiagonal; j <= n; j++) {
-        const prev = prevJ;
-        prevJ = result[j];
-        result[j] = result[j].plus(prev).plus(1);
-      }
-      countDiagonal++;
-    }
-  
-    console.log(result);
-    return result[result.length - 1];
-  }
-  
   _checkSimpleSolutions() {
     let result = false;
     if (this._n <= 0 ) { 
