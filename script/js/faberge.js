@@ -1,20 +1,11 @@
 'use strict';
 
-// let result = [];
-
 function height(n,m) {
-    // if (n <= 0 ) { return 0; }
-    // if ((m < 2) || (n === 1)) { return m; }3
-    // if (n >= m) { return sumDiagonal(m); }
-    // if (n === 2) { return sum2(m); }
-
-
     console.time('Total');
-    // const result = faberge(n, m);
-    const fab = new Faberge(n, m);
-    const result = fab.getSolution();
+    const faberge = new Faberge(n, m);
+    const result = faberge.getSolution();
     console.timeEnd('Total');
-    console.log(`(n,m) = (${n},${m}), count: ${fab.Count}, result = ${result.toString()}`);
+    console.log(`(n,m) = (${n},${m}), count: ${faberge.Count}, result = ${result.toString()}`);
     console.log(`=========================================`);
     return result;
 }
@@ -62,7 +53,7 @@ class Faberge {
       for (let j = 2; j < i; j++) {
         prev = prevJ;
         prevJ = result[j];
-        result[j] = result[j].plus(prev).plus(1);
+        result[j] = BigNumber.sum(result[j], prev, 1);
         this._count++;
       }
       result[i] = this._sumDiagonal(i);
@@ -74,7 +65,7 @@ class Faberge {
       for (let j = countDiagonal; j < i; j++) {
         prev = prevJ;
         prevJ = result[j];
-        result[j] = result[j].plus(prev).plus(1);
+        result[j] = BigNumber.sum(result[j], prev, 1);
         this._count++;
       }
       countDiagonal++;
@@ -86,7 +77,7 @@ class Faberge {
       for (let j = countDiagonal; j <= this._n; j++) {
         prev = prevJ;
         prevJ = result[j];
-        result[j] = result[j].plus(prev).plus(1);
+        result[j] = BigNumber.sum(result[j], prev, 1);
         this._count++;
       }
        countDiagonal++;
@@ -96,14 +87,56 @@ class Faberge {
   }
 
   _getSolution2() {
-    this._count = -1;
-    return 0;
+    let result = [0, 0],
+        prev,
+        prevJ,
+        countStage1 = this._n * 2 + 1,
+        countSubStage1,
+        countStage2 = this._m - this._n + 2,
+        countStage3 = this._m,
+        countDiagonal = 3;
+
+    for (let i = 5; i <= countStage1; i++) {
+      prevJ = i - 1;
+      countSubStage1 = Math.floor((i - 2) / 2);
+      for (let j = 2; j <= countSubStage1; j++) {
+        prev = prevJ;
+        prevJ = result[j];
+        result[j] = BigNumber.sum(result[j], prev, 1);
+        this._count++;
+      }
+      if (i % 2 === 1) {
+        result.push( this._sumHalfDiagonal(i) );
+      }
+    }
+
+    for (let i = countStage1 + 1; i <= countStage2; i++) {
+      prevJ = i - 1;
+      for (let j = 2; j <= this._n; j++) {
+        prev = prevJ;
+        prevJ = result[j];
+        result[j] = BigNumber.sum(result[j], prev, 1);
+        this._count++;
+      }
+    }
+
+    countStage2 = Math.max(countStage1, countStage2);
+    countDiagonal = Math.max(this._n - (countStage3 - countStage2), countDiagonal);
+    for (let i = countStage2 + 1; i <= countStage3; i++) {
+      prevJ = result[countDiagonal - 1];
+      for (let j = countDiagonal; j <= this._n; j++) {
+        prev = prevJ;
+        prevJ = result[j];
+        result[j] = BigNumber.sum(result[j], prev, 1);
+        this._count++;
+      }
+      countDiagonal++;
+    }
+
+    return result[result.length - 1];  
   }
 
   _getSolution3() {
-    // this._count = -1;
-    // return 0;
-
     let result = [],
         prev,
         prevJ,
@@ -120,7 +153,7 @@ class Faberge {
         result[j] = result[j].plus(prev).plus(1);
         this._count++;
       }
-      result[i] = sumDiagonal(i);
+      result[i] = this._sumDiagonal(i);
       prevJ = result[1];
     }
 
@@ -226,12 +259,16 @@ height(477,500).toString();
 
 //16.7s
 //6.77s
-//6.87s 4.90s
+//6.87s 4.90s 
+//7.4s        4418470
 height(477,10000).toString();
 
 //91.9s
 //80.0s 62.5s
+//128s        24720948
+//110s        20577680
 height(4477,10000).toString();
 
-//12.3s 11.0 s
+//12.3s 11.0s
+//30.0s       4955948
 height(9477,10000).toString();
