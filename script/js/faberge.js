@@ -24,7 +24,7 @@ class Faberge {
 
   getSolution() {
     if ( this._checkSimpleSolutions() ) { return this._solution; }
-    const mode = this._getMode();   // 0 - недалеко от диагонали // 1 - до середины (m-2/2) // 2 - за серединой
+    const mode = this._getMode();   // 1 - недалеко от диагонали // 2 - до середины (m-2/2) // 3 - за серединой
     switch (mode) {
       case 1: return this._getSolution1();
       case 2: return this._getSolution2();
@@ -35,41 +35,43 @@ class Faberge {
 
   _getMode() {
     if (this._m - this._n + 2 < this._n) { return 1; }
-    if (this._n <= (this._m - 2 / 2) ) { return 2; }
+    if (this._n <= ( (this._m - 2) / 2) ) { return 2; }
     return 3;
   }
 
   _getSolution1() {
-    let result = [],
+    let result = [0, 0, 0, 0],
         prev,
         prevJ,
-        countStage1 = this._m - this._n + 2,
-        countStage2 = this._n,
+        countStage1 = this._m - this._n + 4,
+        countStage2 = this._n + 4,
         countStage3 = this._m,
-        countDiagonal = 3;
+        countDiagonal = 4;
 
-    for (let i = 2; i <= countStage1; i++) {
-      result[1] = new BigNumber(i);
-      for (let j = 2; j < i; j++) {
+    result[4] = this._sumDiagonal_4(8);
+    for (let i = 9; i <= countStage1; i++) {
+      result[3] = new BigNumber( this._sum3(i - 1) );
+      prevJ = result[3];
+      for (let j = 4; j < i - 4; j++) {
         prev = prevJ;
         prevJ = result[j];
-        result[j] = BigNumber.sum(result[j], prev, 1);
+        result[j] = result[j].plus(prev).plus(1);
         this._count++;
       }
-      result[i] = this._sumDiagonal(i);
-      prevJ = result[1];
+      result[i - 4] = this._sumDiagonal_4(i);
+      prevJ = result[3];
     }
 
     for (let i = countStage1 + 1; i <= countStage2; i++) {
       prevJ = result[countDiagonal - 1];
-      for (let j = countDiagonal; j < i; j++) {
+      for (let j = countDiagonal; j < i - 4; j++) {
         prev = prevJ;
         prevJ = result[j];
-        result[j] = BigNumber.sum(result[j], prev, 1);
+        result[j] = result[j].plus(prev).plus(1);
         this._count++;
       }
       countDiagonal++;
-      result[i] = this._sumDiagonal(i);
+      result[i - 4] = this._sumDiagonal_4(i);
     }
 
     for (let i = countStage2 + 1; i <= countStage3; i++) {
@@ -77,7 +79,7 @@ class Faberge {
       for (let j = countDiagonal; j <= this._n; j++) {
         prev = prevJ;
         prevJ = result[j];
-        result[j] = BigNumber.sum(result[j], prev, 1);
+        result[j] = result[j].plus(prev).plus(1);
         this._count++;
       }
        countDiagonal++;
@@ -87,22 +89,22 @@ class Faberge {
   }
 
   _getSolution2() {
-    let result = [0, 0],
+    let result = [0, 0, 0, 0],
         prev,
         prevJ,
-        countStage1 = this._n * 2 + 1,
+        countStage1 = this._n * 2 + 2,
         countSubStage1,
-        countStage2 = this._m - this._n + 2,
+        countStage2 = this._m - this._n + 3,
         countStage3 = this._m,
-        countDiagonal = 3;
+        countDiagonal = 4;
 
-    for (let i = 5; i <= countStage1; i++) {
-      prevJ = i - 1;
+    for (let i = 9; i <= countStage1; i++) {
+      prevJ = new BigNumber( this._sum3(i - 1) );
       countSubStage1 = Math.floor((i - 2) / 2);
-      for (let j = 2; j <= countSubStage1; j++) {
+      for (let j = 4; j <= countSubStage1; j++) {
         prev = prevJ;
         prevJ = result[j];
-        result[j] = BigNumber.sum(result[j], prev, 1);
+        result[j] = result[j].plus(prev).plus(1);
         this._count++;
       }
       if (i % 2 === 1) {
@@ -111,23 +113,24 @@ class Faberge {
     }
 
     for (let i = countStage1 + 1; i <= countStage2; i++) {
-      prevJ = i - 1;
-      for (let j = 2; j <= this._n; j++) {
+      prevJ = new BigNumber( this._sum3(i - 1) );
+      for (let j = 4; j <= this._n; j++) {
         prev = prevJ;
         prevJ = result[j];
-        result[j] = BigNumber.sum(result[j], prev, 1);
+        result[j] = result[j].plus(prev).plus(1);
         this._count++;
       }
     }
 
     countStage2 = Math.max(countStage1, countStage2);
     countDiagonal = Math.max(this._n - (countStage3 - countStage2), countDiagonal);
+    result[countDiagonal - 1] = new BigNumber( this._sum3(countStage2) );
     for (let i = countStage2 + 1; i <= countStage3; i++) {
       prevJ = result[countDiagonal - 1];
       for (let j = countDiagonal; j <= this._n; j++) {
         prev = prevJ;
         prevJ = result[j];
-        result[j] = BigNumber.sum(result[j], prev, 1);
+        result[j] = result[j].plus(prev).plus(1);
         this._count++;
       }
       countDiagonal++;
@@ -193,7 +196,7 @@ class Faberge {
     } else if (this._n === 2) { 
       result = true;
       this._solution = this._sum2(this._m); 
-    } else if (this._m - this._n <= 2) {
+    } else if (this._m - this._n <= 4) {
       result = true;
       switch (this._m - this._n) {
         case 0:
@@ -205,6 +208,12 @@ class Faberge {
         case 2:
           this._solution = this._sumDiagonal_2(this._m);
           break;
+        case 3:
+          this._solution = this._sumDiagonal_3(this._m);
+          break;
+        case 4:
+          this._solution = this._sumDiagonal_4(this._m);
+          break;
       }
     } else if ((this._m % 2 === 1) && (this._n === (this._m - 1) / 2)) {
       result = true;
@@ -214,7 +223,11 @@ class Faberge {
   }
 
   _sum2(m) {
-    return (new BigNumber(m)).pow(2).plus(m).div(2);
+    return m * (m + 1) / 2;
+  }
+
+  _sum3(m) {
+    return (m ** 3 + m * 5) / 6;
   }
   
   _sumDiagonal(m) {
@@ -222,36 +235,48 @@ class Faberge {
   }
   
   _sumDiagonal_1(m) {
-    return this._sumDiagonal(m).minus(1);
+    return (new BigNumber(2)).pow(m).minus(2);
+    // return this._sumDiagonal(m).minus(1);
   }
   
   _sumDiagonal_2(m) {
-    return this._sumDiagonal_1(m).minus(m);
+    return (new BigNumber(2)).pow(m).minus(m + 2);
+    // return this._sumDiagonal_1(m).minus(m);
+  }
+
+  _sumDiagonal_3(m) {
+    return (new BigNumber(2)).pow(m).minus( this._sum2(m) + 2 );
+  }
+
+  _sumDiagonal_4(m) {
+    return (new BigNumber(2)).pow(m).minus( this._sum3(m) + 2 );
   }
 
   _sumHalfDiagonal(m) {
-    return this._sumDiagonal_2(m).plus(m).div(2);
+    return (new BigNumber(2)).pow(m).minus(2).div(2);
+    // return this._sumDiagonal_2(m).plus(m).div(2);
   }
 }
 
 
-height(-1,20).toString(); // 0
-height(0,21).toString();  // 0
-height(1,10).toString();  // 10
-height(12,1).toString();  // 1
-height(2,20).toString();  // 210
-height(4,9).toString();   // 255
-height(8,10).toString();  // 1012
-height(10,11).toString(); // 2046
-height(12,12).toString(); // 4095
+// height(-1,20).toString(); // 0
+// height(0,21).toString();  // 0
+// height(1,10).toString();  // 10
+// height(12,1).toString();  // 1
+// height(2,20).toString();  // 210
+// height(4,9).toString();   // 255
+// height(8,10).toString();  // 1012
+// height(10,11).toString(); // 2046
+// height(12,12).toString(); // 4095
 
-height(3,5).toString();   // 25
-height(5,8).toString();
-height(5,9).toString();
-height(6,5).toString();
-height(7,5).toString();
-height(2,14).toString();
-height(7,20).toString();
+// height(3,5).toString();   // 25
+// height(5,8).toString();   // 218
+// height(5,9).toString();   // 381
+// height(6,5).toString();   // 31
+// height(7,5).toString();   // 31
+// height(2,14).toString();  // 105
+// height(7,20).toString();  // 137979 (45)
+// height(10,17).toString(); //109293
 height(7,500).toString();
 height(500,500).toString();
 height(237,500).toString();
@@ -259,7 +284,7 @@ height(477,500).toString();
 
 //16.7s
 //6.77s
-//6.87s 4.90s 
+//6.87s 4.90s 4399431
 //7.4s        4418470
 height(477,10000).toString();
 
@@ -267,8 +292,10 @@ height(477,10000).toString();
 //80.0s 62.5s
 //128s        24720948
 //110s        20577680
-height(4477,10000).toString();
+//105s        20563210
+// height(4477,10000).toString();
 
 //12.3s 11.0s
 //30.0s       4955948
+//            4926479
 height(9477,10000).toString();
