@@ -3,6 +3,7 @@
 type FunctionMetaType = {
     title?: string,
     warning?: string,
+    error?: string,
     func: Function,
     args?: any[]
 }
@@ -10,7 +11,7 @@ type FunctionMetaType = {
 const funcsMeta: FunctionMetaType[] = [];
 
 // Манипулирование DOM
-if ( 0 ) {
+if (1) {
     addFunctionMeta({ title: "Доступ к DOM через document",
         func: () => document,
     }); 
@@ -33,7 +34,7 @@ if ( 0 ) {
         func: () => document.body.firstElementChild,
     });
     addFunctionMeta({ title: "Проверка на дочерний узел",
-        func: () => document.body.firstElementChild.hasChildNodes(),
+        func: () => document.body.firstElementChild?.hasChildNodes(),
     });
     addFunctionMeta({ title: "Сосед справа",
         func: () => document.head.nextElementSibling,
@@ -43,7 +44,8 @@ if ( 0 ) {
     });
     addFunctionMeta({ title: "Обращение к элементу по его id (если id имеет дефис, то через window['id'])",
         warning: "Так можно, но не нужно!",
-        func: () => window["code-wrapper"],
+        //@ts-ignore
+        func: () => window['code-wrapper'],
     });
     addFunctionMeta({ title: "Поиск элементов по селектору document.querySelectorAll(css selectors)",
         warning: "Псеводклассы тоже работают :hover, :active. Возвращает статическую коллекцию.",
@@ -53,10 +55,10 @@ if ( 0 ) {
         func: () => document.querySelector("html *") ,
      });
     addFunctionMeta({ title: "Проверка на удовлетворению css селекторам",
-        func: () => document.body.firstElementChild.matches("#code-wrapper") ,
+        func: () => document.body.firstElementChild?.matches("#code-wrapper") ,
     });
     addFunctionMeta({ title: "Ближайший родитель, который соответсвует css селекторам (если нет, то просто ближайший)",
-        func: () => document.getElementById("code-wrapper").closest("body"),
+        func: () => document.getElementById("code-wrapper")?.closest("body"),
     });
     addFunctionMeta({ title: "Возвращает коллекцию элементов по тегу",
         warning: "Возвращает динамическую коллекцию (коллекцию указателей): document.getElementsByTagName('tag or *')",
@@ -74,27 +76,27 @@ if ( 0 ) {
 }
 
 // Изменение DOM
-if ( 0 ) {
+if (0) {
     let codeWrapper = document.getElementById("code-wrapper");
 
     addFunctionMeta({ title: "nodeType",
         warning: "Depricated",
-        func: () => codeWrapper.nodeType ,
+        func: () => codeWrapper?.nodeType ,
     });
     addFunctionMeta({ title: "nodeName",
-        func: () => codeWrapper.nextSibling.nodeName,
+        func: () => codeWrapper?.nextSibling?.nodeName,
     });
     addFunctionMeta({ title: "tagName",
-        func: () => codeWrapper.tagName,
+        func: () => codeWrapper?.tagName,
     });
     addFunctionMeta({ title: "innerHtml",
         warning: "Есть только у элементов",
-        func: () => codeWrapper.innerHTML = "<b>Привет, мир!</b>",
+        func: () => codeWrapper!.innerHTML = "<b>Привет, мир!</b>",
     });
     addFunctionMeta({ title: "outerHtml",
         warning: "Не меняет элемент!",
         func: () => {
-            let bb = codeWrapper.getElementsByTagName("b");     // Динамическая коллекция
+            let bb = codeWrapper?.getElementsByTagName("b");     // Динамическая коллекция
             if (bb && bb.length) {
                 bb[0].outerHTML = "<i>" + bb[0].textContent + "</i>";
                 return bb[0];
@@ -103,17 +105,20 @@ if ( 0 ) {
         },
     });
     addFunctionMeta({ title: "nodeValue",
-        func: () => codeWrapper.previousSibling.previousSibling.nodeValue,
+        func: () => codeWrapper?.previousSibling?.previousSibling?.nodeValue,
     });
     addFunctionMeta({ title: "data",
         warning: "Почти тоже самое, что nodeValue",
-        func: () => codeWrapper.previousSibling.previousSibling["data"] ,
+        func: () => (codeWrapper?.previousSibling?.previousSibling) 
+            //@ts-ignore
+            ? codeWrapper.previousSibling.previousSibling["data"] 
+            : '',
     });
     addFunctionMeta({ title: "textContent",
-        func: () => codeWrapper.textContent ,
+        func: () => codeWrapper?.textContent ,
     });
     addFunctionMeta({ title: "hidden",
-        func: () => setInterval(() => codeWrapper.hidden = !codeWrapper.hidden, 5e2),
+        func: () => setInterval(() => codeWrapper!.hidden = !codeWrapper?.hidden, 5e2),
     });
 }
 
@@ -122,46 +127,46 @@ if (0) {
     let codeWrapper = document.getElementById("code-wrapper");
 
     addFunctionMeta({ title: "attribute id as property elem.id",
-        func: () => codeWrapper.id,
+        func: () => codeWrapper?.id,
     });
     addFunctionMeta({ title: "hasAttribute",
         warning: "Имена атрибутов регистронезависимые",
-        func: () => codeWrapper.hasAttribute('name'),
+        func: () => codeWrapper?.hasAttribute('name'),
     });
     addFunctionMeta({ title: "setAttribute and attributes",
         warning: "attributes возвращает динамическую коллекцию, и т. к. дальше атрибут удаляется, то он отсутствует",
         func: () => { 
-            codeWrapper.setAttribute('myAttr', '123');
-            return codeWrapper.attributes;
+            codeWrapper?.setAttribute('myAttr', '123');
+            return codeWrapper?.attributes;
         },
     });
     addFunctionMeta({ title: "removeAttribute and getAttribute",
         func: () => {
-            codeWrapper.removeAttribute('myAttr');
-            return codeWrapper.getAttribute('myAttr');
+            codeWrapper?.removeAttribute('myAttr');
+            return codeWrapper?.getAttribute('myAttr');
         },
     });
     addFunctionMeta({ title: "Атрибут style - строка, свойство style - объект",
         func: () => {
-            codeWrapper.setAttribute('style', 'color: red');
-            return `Атрибут style - ${ typeof codeWrapper.getAttribute("style") }, свойство style - ${ typeof codeWrapper.style }`;
+            codeWrapper?.setAttribute('style', 'color: red');
+            return `Атрибут style - ${ typeof codeWrapper?.getAttribute("style") }, свойство style - ${ typeof codeWrapper?.style }`;
         },
     });
     addFunctionMeta({ title: "data- атрибуты доступны через свойство dataset",
         warning: "Атрибуты, состоящие из нескольких слов становятся свойствами, записанными с помощью верблюжьей нотации:",
         func: () => {
-            codeWrapper.setAttribute('data-my-attr', '123');
-            return codeWrapper.dataset.myAttr;
+            codeWrapper?.setAttribute('data-my-attr', '123');
+            return codeWrapper?.dataset.myAttr;
         },
     });
     addFunctionMeta({ title: "outerHtml выводит все установленные атрибуты элемента",
-        func: () => codeWrapper.outerHTML,
+        func: () => codeWrapper?.outerHTML,
     });
 }
 
 // Добавление в DOM и удаление из DOM
 if (0) {
-    let codeWrapper: HTMLElement = document.getElementById("code-wrapper");
+    let codeWrapper: HTMLElement | null = document.getElementById("code-wrapper");
     let codeWrapperClone: HTMLElement;
     let span: HTMLSpanElement, text: Node;
 
@@ -180,7 +185,7 @@ if (0) {
     addFunctionMeta({ title: "append - вставка элемента в родительский элемент с конца",
         warning: "Один элемент можно вставить всего 1 раз, затем он перемещаются",
         func: () => {
-            codeWrapper.append(span);
+            codeWrapper?.append(span);
             span.append(text)
         },
     });
@@ -188,7 +193,7 @@ if (0) {
         func: () => {
             let div2 = document.createElement('div');
             div2.innerHTML = "My message:";
-            codeWrapper.prepend(div2);
+            codeWrapper?.prepend(div2);
         },
     });
     addFunctionMeta({ title: "before - вставка элемента слева",
@@ -214,27 +219,27 @@ if (0) {
     });
     addFunctionMeta({ title: "insertAdjacentHTML - вставка html текста",
         warning: "beforebegin - вставка перед элементом, afterbegin - вставка в начало элемента, beforeend - вставка в конец элемента, afterend - вставка после элемента ",
-        func: () => codeWrapper.insertAdjacentHTML("beforeend", "<p> Абзац </p>"),
+        func: () => codeWrapper?.insertAdjacentHTML("beforeend", "<p> Абзац </p>"),
     });
     addFunctionMeta({ title: "insertAdjacentText - вставка текста",
-        func: () => codeWrapper.insertAdjacentText("beforeend", "<p> Вставка текста.</p>"),
+        func: () => codeWrapper?.insertAdjacentText("beforeend", "<p> Вставка текста.</p>"),
     });
     addFunctionMeta({ title: "insertAdjacentElement - вставка элемента",
         func: () => {
             let divElem: HTMLDivElement = document.createElement<'div'>('div');
             divElem.innerHTML = 'Другой текст';
-            codeWrapper.insertAdjacentElement("afterbegin", divElem);
+            codeWrapper?.insertAdjacentElement("afterbegin", divElem);
         },
     });
     addFunctionMeta({ title: "cloneNode - клонирование элемента",
         func: () => {
-            codeWrapperClone = ( codeWrapper.cloneNode(false) as HTMLElement);
+            codeWrapperClone = ( codeWrapper?.cloneNode(false) as HTMLElement);
             return codeWrapperClone;
         },
     });
     addFunctionMeta({ title: "remove - удаление из DOM",
         warning: "Элемент удаляется только из DOM, если была ссылка на него, то он остается в памяти",
-        func: () => codeWrapper.remove(),
+        func: () => codeWrapper?.remove(),
     });
     addFunctionMeta({ title: "DocumentFragment - обертка, которая удаляется при вставке, т. е. не имеет тега, а используется как контейнер",
         func: () => {
@@ -251,41 +256,41 @@ if (0) {
 
 // Стили и классы 
 if (0) {
-    const codeWrapper: HTMLElement = document.querySelector("#code-wrapper");
+    const codeWrapper: HTMLElement | null = document.querySelector("#code-wrapper"); 
 
     addFunctionMeta({ title: "Вся строка с названиями класса elem.className",
-        func: () => codeWrapper.className += " custom" ,
+        func: () => codeWrapper!.className += " custom" ,
     });
     addFunctionMeta({ title: "Специальный объект с методами доступа к классам elem.classList",
         warning: "Доступные методы: add, remove, toggle, contains",
         func: () => {
-            codeWrapper.classList.add("ef");
-            return codeWrapper.classList.contains("ef");
+            codeWrapper?.classList.add("ef");
+            return codeWrapper?.classList.contains("ef");
         },
     });
     addFunctionMeta({ title: "Задание стиля элемента через объект elem.style",
         warning: "Для свойства из нескольких слов используется camelCase",
         func: () => { 
-            codeWrapper.style.backgroundColor = "red";
-            codeWrapper.style.height = "1vh";
-            return codeWrapper.style;
+            codeWrapper!.style.backgroundColor = "red";
+            codeWrapper!.style.height = "1vh";
+            return codeWrapper?.style;
         },
     });
     addFunctionMeta({ title: "Очистка стиля через elem.style.prop = \"\"",
         func: () => {
-            codeWrapper.style.backgroundColor = "";
-            return codeWrapper.style;
+            codeWrapper!.style.backgroundColor = "";
+            return codeWrapper?.style;
         },
     });
     addFunctionMeta({ title: "Задание нескольких стилей строкой через elem.style.cssText",
         warning: "Удаляет все существующие стили в атрибуте style",
         func: () => { 
-            codeWrapper.style.cssText = "background-color: yellow; width: 25vw; height: 2vh;"
+            codeWrapper!.style.cssText = "background-color: yellow; width: 25vw; height: 2vh;"
         },
     });
     addFunctionMeta({ title: "Получение наследуемых стилей через elem.getComputedStyle",
         warning: "Функция возвращает окончательные значение в виде вычисленных числовых значений.",
-        func: () => getComputedStyle(codeWrapper),
+        func: () => codeWrapper ? getComputedStyle(codeWrapper) : null,
     });
  }
 
@@ -391,7 +396,7 @@ function addFunctionMeta(funcMeta: FunctionMetaType): void {
 
 (function showFunctionsMeta(): void {
     
-    let codeWrapper: HTMLElement = document.getElementById('code-wrapper');
+    let codeWrapper: HTMLElement | null = document.getElementById('code-wrapper');
 
     funcsMeta.forEach( (funcMeta: FunctionMetaType) => {
         // let nodeDList = new HTMLDListElement();
@@ -407,7 +412,10 @@ function addFunctionMeta(funcMeta: FunctionMetaType): void {
             console.warn( funcMeta.title );
         }
         if (funcMeta.warning) {
-            console.error( funcMeta.warning );
+            console.warn( funcMeta.warning );
+        }
+        if (funcMeta.error) {
+            console.warn( funcMeta.error );
         }
         console.log( funcMeta.func );
 

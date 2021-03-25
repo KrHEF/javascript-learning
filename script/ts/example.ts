@@ -38,7 +38,7 @@ let log = (obj: any = '') => console.log(obj);
         // Массив строк, чисел или логического типа
         let list3: Array<string | number | boolean> = ["str", 1, false];
         list3.push(true);
-        list3[list3.length] = null;     // null это же объект, почему он проходит?
+        // list3[list3.length] = null;     // null это же объект, почему он проходит?
 
         if (list3.length === 0) {
             log('list1: ' + list1.map((item) => typeof (item)));
@@ -60,7 +60,7 @@ let log = (obj: any = '') => console.log(obj);
         let t1: [string, number];
         t1 = ['1', 2];
         t1.push('false', '4');      // на самом деле должен быть баг
-        t1.push(null);
+        // t1.push(null);
 
         if (t1[1] === 5)
             log('tuple:' + t1.map((item) => typeof (item)));
@@ -125,7 +125,8 @@ let log = (obj: any = '') => console.log(obj);
             // Если указать тип, то компилятор будет ругаться на отсутсвие return.
         }
 
-        let v1: void = null;
+        // let v1: void = null;
+        let v1: void;
         let v2: void = undefined;
         let v3: void = void 0;
         //let v4: void = 5;     // Error
@@ -133,10 +134,10 @@ let log = (obj: any = '') => console.log(obj);
             log('' + v1 + ', ' + v2 + ', ' + v3);
     } // Void - для функций в основном, для переменных странно.
     {
-        let n0: null = undefined;
+        // let n0: null = undefined;
         let n1: null = null;
-        let n2: null = void 0;
-        let n3: undefined = null;
+        // let n2: null = void 0;
+        // let n3: undefined = null;
         let n4: undefined = undefined;
         let n5: undefined = void 0;
         // больше ничего не присовить
@@ -154,7 +155,7 @@ let log = (obj: any = '') => console.log(obj);
         let o1: object;
         // o1 = 1;         // Error
         // o1 = 'str';     // Error
-        o1 = null;
+        // o1 = null;      // Error in strict mode of TS
         o1 = {};
         o1 = [];
 
@@ -408,19 +409,19 @@ let log = (obj: any = '') => console.log(obj);
 {
     {
         // Named function
-        function add(x, y) {
+        function add(x: number, y: number) {
             return x + y;
         }
 
         // Anonymous function
-        let myAdd = function (x, y) {
+        let myAdd = function (x: number, y: number) {
             return x + y;
         };
     } // Именованные функции и анонимные
     {
         let z = 100;
 
-        function addToZ(x, y) {
+        function addToZ(x: number, y: number) {
             return x + y + z;
         }
 
@@ -588,7 +589,7 @@ let log = (obj: any = '') => console.log(obj);
         }
 
         class Dog extends Animal {
-            constructor(name) {
+            constructor(name: string) {
                 super(name, true);
             }
 
@@ -655,8 +656,8 @@ let log = (obj: any = '') => console.log(obj);
     } // Абстрактные классы
     {
         class Point {
-            x: number;
-            y: number;
+            x: number = 0;
+            y: number = 0;
         }
 
         interface Point3d extends Point {

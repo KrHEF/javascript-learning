@@ -1,3 +1,4 @@
+"use strict";
 let lang = {
     "en": "Scarab Temple: Hold and Win",
     "ru": "Какая-то игруля",
@@ -19,9 +20,7 @@ let lang = {
     "zh-hant": "聖甲蟲王朝-集鴻運",
     "ko": "Scarab Temple",
 };
-let testingCount = 1e8, searchString = "игруля"; // sec
-// Результат test1: 50000000 р. за 0.246 сек.
-// Результат test1: 5000000000 р. за 41.743 сек.
+let testingCount = 1e8, searchString = "игруля";
 function test1() {
     let date = Date.now(), i = 0, result = "";
     while (i < testingCount) {
@@ -32,8 +31,6 @@ function test1() {
     date = Date.now() - date;
     console.log(`Результат test1: ${testingCount} р. за ${date / 1e3} сек.`);
 }
-// Результат test4: 50000000 р. за 0.075 сек.
-// Результат test4: 5000000000 р. за 6.005 сек.
 function test4() {
     let date = Date.now(), i = 0, result = "";
     while (i < testingCount) {
@@ -44,8 +41,6 @@ function test4() {
     date = Date.now() - date;
     console.log(`Результат test4: ${testingCount} р. за ${date / 1e3} сек.`);
 }
-// Результат test5: 50000000 р. за 0.349 сек.
-// Результат test5: 5000000000 р. за 44.005 сек.
 function test5() {
     let date = Date.now(), i = 0, result = "";
     while (i < testingCount) {
@@ -56,8 +51,6 @@ function test5() {
     date = Date.now() - date;
     console.log(`Результат test5: ${testingCount} р. за ${date / 1e3} сек.`);
 }
-// Результат test2: 50000000 р. за 13.815 сек.
-// Результат test2: 50000000 р. за 14.784 сек.
 function test2() {
     let date = Date.now(), i = 0;
     while (i < testingCount) {
@@ -67,8 +60,6 @@ function test2() {
     date = Date.now() - date;
     console.log(`Результат test2: ${testingCount} р. за ${date / 1e3} сек.`);
 }
-// Результат test3: 50000000 р. за 92.936 сек.
-// Результат test3: 50000000 р. за 115.227 сек.
 function test3() {
     let date = Date.now(), i = 0;
     while (i < testingCount) {
@@ -82,8 +73,4 @@ function test3() {
 test1();
 test4();
 test5();
-//test2();
-//test3();
-//.then( (result: string) => { console.log(result); });
-//(() => test2());//.then(() => test3());
 //# sourceMappingURL=speedtest.js.map
