@@ -14,25 +14,21 @@
 // }
 
 
-function reverseLettersInWords(str) {
-    let result = '',
-        buffer = [];
-        
-    (str + '.').split('').forEach((char) => {
+function reverseLettersInWords(str, buffer = []) {
+    return (str + '.').split('').reduce((result, char) => {
         if ( isLetter(char) || isNumber(char) ) {
             buffer.push(char);
         } else {
-            result += buffer.slice().reduce( (result, char) => result + sameCase( buffer.pop(), char), '') + char;
+            result += buffer.slice().reduce( (res, char) => res + doSameCase( buffer.pop(), char), '') + char;
         }
-    });
-
-    return result.slice(0, -1);
+        return result;
+    }, '').slice(0, -1);
 }
 
 const  isLetter = (char) => char.toLowerCase() !== char.toUpperCase(),
     isNumber = (char) => Number.parseInt(char).toString() === char,
     isUpperCase = (char) => char.toLowerCase() !== char,
-    sameCase = (char, example) => isUpperCase(example) ? char.toUpperCase() : char.toLowerCase(); 
+    doSameCase = (char, example) => isUpperCase(example) ? char.toUpperCase() : char.toLowerCase(); 
 
 
 
