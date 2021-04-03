@@ -1,4 +1,10 @@
 "use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
 let log = (obj = '') => console.log(obj);
 {
     {
@@ -144,7 +150,7 @@ let log = (obj = '') => console.log(obj);
     }
     {
         function func3(param) {
-            return param ?? "default";
+            return param !== null && param !== void 0 ? param : "default";
         }
     }
     {
@@ -441,7 +447,6 @@ let log = (obj = '') => console.log(obj);
             }
         }
         function showName() {
-            log(this.name);
         }
         showName.call(new C());
     }
@@ -451,6 +456,180 @@ let log = (obj = '') => console.log(obj);
     }
     {
         const t1 = 'a', t2 = 'A';
+        const t3 = 'a1', t4 = 'Aa';
+    }
+    {
+    }
+}
+{
+    {
+        function color(value) {
+            return (target) => {
+                target['color'] = value;
+            };
+        }
+        let Test = class Test {
+            constructor() {
+                this.a = 0;
+            }
+        };
+        Test = __decorate([
+            color('green')
+        ], Test);
+    }
+    {
+        function first() {
+            log('first decorator was called');
+            return (target, propertyKey, descriptor) => {
+                console.log('first decorator', target, propertyKey, descriptor);
+            };
+        }
+        function test(name) {
+            log('test decorator was called for ' + name);
+            return (...args) => {
+                log('test decorator for ' + name);
+                log(args);
+            };
+        }
+        let C = class C {
+            constructor(x) {
+                this.x = x;
+            }
+            show() {
+                log(this.x);
+            }
+            get X() {
+                return this.x;
+            }
+        };
+        __decorate([
+            test('field')
+        ], C.prototype, "x", void 0);
+        __decorate([
+            test('method')
+        ], C.prototype, "show", null);
+        __decorate([
+            test('prop')
+        ], C.prototype, "X", null);
+        __decorate([
+            test('static field')
+        ], C, "Sum", void 0);
+        C = __decorate([
+            test('class')
+        ], C);
+    }
+}
+{
+    function createArray(limit) {
+        let arr = [];
+        for (let i = 0; i < limit; i++) {
+            arr.push(i * 10);
+        }
+        return arr;
+    }
+    let defaultObj = { type: 'Employee' };
+    function getUser(type) {
+        let obj = { ...defaultObj };
+        obj.branch = 'Pskov';
+        return (type === 'Manager') ? obj : defaultObj;
+    }
+    function filter(arr, limit) {
+        return arr.filter((str) => str.length === limit);
+    }
+    function getUser2(id, type) {
+        switch (id) {
+            case 101:
+                return (type === 'first') ? 'FirstName1' : 'LastName1';
+            case 102:
+                return (type === 'first') ? 'FirstName2' : 'LastName2';
+            case 103:
+                return (type === 'first') ? 'FirstName3' : 'LastName3';
+            case 104:
+                return (type === 'first') ? 'FirstName4' : 'LastName4';
+            case 105:
+                return (type === 'first') ? 'FirstName5' : 'LastName5';
+            case 106:
+                return (type === 'first') ? 'FirstName6' : 'LastName6';
+            case 107:
+                return (type === 'first') ? 'FirstName7' : 'LastName7';
+            case 108:
+                return (type === 'first') ? 'FirstName8' : 'LastName8';
+            default:
+                return '';
+        }
+    }
+    function getUser3(id, type) {
+        const names = {
+            101: { firstName: 'FirstName1', lastName: 'LastName1' },
+            102: { firstName: 'FirstName2', lastName: 'LastName2' },
+            103: { firstName: 'FirstName3', lastName: 'LastName3' },
+            104: { firstName: 'FirstName4', lastName: 'LastName4' },
+            105: { firstName: 'FirstName5', lastName: 'LastName5' },
+            106: { firstName: 'FirstName6', lastName: 'LastName6' },
+            107: { firstName: 'FirstName7', lastName: 'LastName7' },
+            108: { firstName: 'FirstName8', lastName: 'LastName8' },
+        };
+        if (!names[id]) {
+            return '';
+        }
+        return (type === 'first') ? names[id].firstName : names[id].lastName;
+    }
+    log(getUser3(109, "first"));
+    function makeCounter() {
+        let count = 0;
+        return function () {
+            return count++;
+        };
+    }
+    let counter = makeCounter();
+    class People {
+        constructor(_firstName, _lastName) {
+            this._firstName = _firstName;
+            this._lastName = _lastName;
+        }
+        get firstName() {
+            return this._firstName;
+        }
+        get lastName() {
+            return this._lastName;
+        }
+        get fullName() {
+            return this.firstName + ' ' + this.lastName;
+        }
+        getInfo() {
+            return `FullName: ${this.fullName}.`;
+        }
+    }
+    class User extends People {
+        constructor(_firstName, _lastName, _country, _city) {
+            super(_firstName, _lastName);
+            this._country = _country;
+            this._city = _city;
+        }
+        get country() {
+            return this._country;
+        }
+        get city() {
+            return this._city;
+        }
+        get address() {
+            return this.country + ' ' + this.address;
+        }
+        getInfo() {
+            return super.getInfo() + ` Address: ${this.address}`;
+        }
+    }
+    class Employee extends People {
+        constructor(_firstName, _lastName, _branch) {
+            super(_firstName, _lastName);
+            this._branch = _branch;
+        }
+        get branch() {
+            return this._branch;
+        }
+        getInfo() {
+            return super.getInfo() + ` Branch: ${this.branch} department`;
+        }
     }
 }
 //# sourceMappingURL=example.js.map

@@ -813,7 +813,7 @@ let log = (obj: any = '') => console.log(obj);
         }
 
         function showName(this: C) {
-            log(this.name);
+            // log(this.name);
         }
 
         showName.call(new C());
@@ -831,13 +831,243 @@ let log = (obj: any = '') => console.log(obj);
     {
         type T1 = 'a' | 'b' | 'c' | 'd';
         type T2 = Uppercase<T1>;
-        // type T3 = `${T1 | T2}1`;
-        // type T4 = `${T2}${T1}`;
+        type T3 = `${T1 | T2}1`;
+        type T4 = `${T2}${T1}`;
 
         const t1: T1 = 'a',
             t2: T2 = 'A';
-        // const t3: T3 = 'a1',
-            // t4: T4 = 'Aa';
+        const t3: T3 = 'a1',
+            t4: T4 = 'Aa';
     } // Uppercase<StringType> and Sting Unions in Types (ругается компилятор)
+    {
 
+    }
+}
+
+// Декораторы
+{
+    {
+        function color(value: string): Function {
+            return (target: any) => {
+                target['color'] = value;
+            }
+        }
+
+        @color('green')
+        class Test {
+            a = 0;
+        }
+
+        // log(new Test());
+    } // Моя поделка
+    {
+        function first() {
+            log('first decorator was called');
+            return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
+                console.log('first decorator', target, propertyKey, descriptor);
+            }
+        }
+
+        function test(name: string) {
+            log('test decorator was called for ' + name);
+            return (...args: any[]) => {
+                log('test decorator for ' + name);
+                log(args);
+            }
+        }
+
+        @test('class')
+        class C {
+            @test('static field')
+            static Sum: number;
+
+            @test('field')
+            private readonly x;
+
+            // @test('ctor')
+            constructor (x: number) {
+                this.x = x;
+            }
+
+            // @first()
+            @test('method')
+            show() {
+                log(this.x);
+            }
+
+            @test('prop')
+            get X() {
+                return this.x;
+            }
+        }
+    } // Порядок вызовов
+}
+
+
+// Задания всякие
+{
+    // 1 ---------------------------------------------------
+    // Любая попытка выполнить данный метод приводит к ошибке. Необходимо это исправить.
+    function createArray(limit: number): number[] {
+        let arr: number[] = [];
+        for (let i = 0; i < limit; i++) {
+            arr.push(i * 10);
+        }
+        return arr;
+    }
+
+    // log( createArray(11) );
+    // 2 ---------------------------------------------------
+    // Представленный ниже код работает некорректно - он всегда возвращает одно и то же значение. Необходимо пояснить   почему и предложить возможные решения данной проблемы.
+    interface IObj {
+        type: string;
+        branch?: string;
+    }
+
+    let defaultObj: IObj = { type: 'Employee' };
+    function getUser(type: string): IObj {
+        let obj: IObj = {...defaultObj};
+        obj.branch = 'Pskov';
+        return (type === 'Manager') ? obj : defaultObj;
+    }
+
+    // log( getUser("Manager") );
+    // log( getUser("No manager") );
+
+    // 3 ---------------------------------------------------
+    // Необходимо написать метод, который принимает массив строк (arr: string[])и число (limit: number). Данный метод должен пройтись по массиву arr и ввернуть массив строк, длина которых равна значению переменной limit.
+    function filter(arr: string[], limit: number): string[] {
+        return arr.filter((str) => str.length === limit);
+    }
+
+    // 4 ---------------------------------------------------
+    // Ниже представлен метод, возвращающий либо имя, либо фамилию 3-х пользователей. Необходимо модифицировать данный метод для поддержки ещё 5-и пользователей. ib и возвращаемые значения заполнить по аналогии с имеющимися. Конечная реализация должна быть максимально оптимизирована для удобства чтения.
+    function getUser2(id: number, type: string): string {
+        switch (id) {
+            case 101:
+                return (type === 'first') ? 'FirstName1' : 'LastName1';
+            case 102:
+                return (type === 'first') ? 'FirstName2' : 'LastName2';
+            case 103:
+                return (type === 'first') ? 'FirstName3' : 'LastName3';
+            case 104:
+                return (type === 'first') ? 'FirstName4' : 'LastName4';
+            case 105:
+                return (type === 'first') ? 'FirstName5' : 'LastName5';
+            case 106:
+                return (type === 'first') ? 'FirstName6' : 'LastName6';
+            case 107:
+                return (type === 'first') ? 'FirstName7' : 'LastName7';
+            case 108:
+                return (type === 'first') ? 'FirstName8' : 'LastName8';
+            default:
+                return '';
+        }
+    }
+
+    interface INames {
+        [key: number]: {firstName: string, lastName: string};
+    }
+
+    function getUser3(id: number, type: string): string {
+        const names: INames = {
+            101: {firstName: 'FirstName1', lastName: 'LastName1'},
+            102: {firstName: 'FirstName2', lastName: 'LastName2'},
+            103: {firstName: 'FirstName3', lastName: 'LastName3'},
+            104: {firstName: 'FirstName4', lastName: 'LastName4'},
+            105: {firstName: 'FirstName5', lastName: 'LastName5'},
+            106: {firstName: 'FirstName6', lastName: 'LastName6'},
+            107: {firstName: 'FirstName7', lastName: 'LastName7'},
+            108: {firstName: 'FirstName8', lastName: 'LastName8'},
+        }
+
+        if (!names[id]) { return ''; }
+        return (type === 'first') ? names[id].firstName : names[id].lastName;
+    }
+
+    log( getUser3(109, "first") );
+
+    // 5 ---------------------------------------------------
+    // Функция makeCounter создает простой счетчик. Однако сейчас он возвращает одно и то же значение 0. Почему и как это исправить?
+    function makeCounter() {
+        let count = 0;
+        return function () {
+            return count++;
+        }
+    }
+
+    let counter: () => void = makeCounter();
+    // log(counter());
+    // log(counter());
+    // log(counter());
+
+    class People {
+
+        constructor(
+            private _firstName: string,
+            private _lastName: string,
+        ) {}
+
+        public get firstName(): string {
+            return this._firstName;
+        }
+
+        public get lastName(): string {
+            return this._lastName;
+        }
+
+        public get fullName(): string {
+            return this.firstName + ' ' + this.lastName;
+        }
+
+        public getInfo(): string {
+            return `FullName: ${this.fullName}.`;
+        }
+    }
+
+    class User extends People {
+
+        constructor(
+            _firstName: string,
+            _lastName: string,
+            private _country: string,
+            private _city: string) {
+                super(_firstName, _lastName);
+        }
+
+        public get country(): string {
+            return this._country;
+        }
+
+        public get city() : string {
+            return this._city;
+        }
+
+        public get address(): string {
+            return this.country + ' ' + this.address;
+        }
+
+        public getInfo(): string {
+            return super.getInfo() + ` Address: ${this.address}`;
+        }
+
+    }
+
+    class Employee extends People {
+
+        constructor(
+            _firstName: string,
+            _lastName: string,
+            private _branch: string) {
+                super(_firstName, _lastName);
+        }
+
+        public get branch() : string {
+            return this._branch;
+        }
+
+        public getInfo(): string {
+            return super.getInfo() + ` Branch: ${this.branch} department`;
+        }
+    }
 }
