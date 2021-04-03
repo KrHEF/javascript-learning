@@ -4,6 +4,7 @@
 
 let log = (obj: any = '') => console.log(obj);
 
+// Типы TypeScript
 {
     // Использовать название типов примитивов с маленькой буквы!
 
@@ -231,8 +232,9 @@ let log = (obj: any = '') => console.log(obj);
         let x1: unknown = 1;
         // log((<string>x1).length);        // Empty string;
     } // через "<type>x"
-} // Типы TypeScript:
+}
 
+// Интерфейсы TrueScript
 {
     // Инстрефейсы работают по принципу "утиной типизации" или "стрктурнго подтипирования".
     // Компилятор проверяет, что переданный объект удовлетворяет описанной структуре
@@ -404,8 +406,9 @@ let log = (obj: any = '') => console.log(obj);
         // }
     } // Интерфейсы, расширяющие классы, для наследования защищенных и приватных полей
 
-} // Интерфейсы TrueScript
+}
 
+// Функции
 {
     {
         // Named function
@@ -479,8 +482,9 @@ let log = (obj: any = '') => console.log(obj);
 
         }
     } // Перегрузки функнкций - задание возможных типов принимаемых параметров и возвращаемых значений.
-} // Функции
+}
 
+// Литеральные типы: String, Number, Boolean и задание типов
 {
     {
         let a1 = 'str';
@@ -504,8 +508,9 @@ let log = (obj: any = '') => console.log(obj);
         }
 
     } // Задание типа через возможноые значений примитивов
-} // Литеральные типы: String, Number, Boolean и задание типов
+}
 
+// Intersection и Union для создание типов
 {
     {    // Union Объединение типов number | string
         let func: (x: string | number) => string = (x) => {
@@ -560,8 +565,9 @@ let log = (obj: any = '') => console.log(obj);
         };
 
     } // Intersection / Пересечение (через &)
-} // Intersection и Union для создание типов
+}
 
+// Классы
 {
     {
         // public - публичное поле, видно снаружи и следовательно в подклассах
@@ -666,8 +672,9 @@ let log = (obj: any = '') => console.log(obj);
 
         let point3d: Point3d = { x: 1, y: 2, z: 3 };
     } // Использование класса в качестве Интерфейса
-} // Классы
+}
 
+// Generics / Шаблоны
 {
     function identity<T>(args: T): T {
         return args;
@@ -676,4 +683,161 @@ let log = (obj: any = '') => console.log(obj);
     // log( identity<number>(5) );     // Явное задание типа
     // log( identity([1, 2, 3]) );     // Автоматическое определение типа по параметру
 
-} // Generics / Шаблоны
+}
+
+// Служебные типы
+{
+    {
+        interface Animal {
+            name: string;
+            legsCount: number;
+            volumeStomach: number;
+        }
+
+        function getAnimal(animal: Partial<Animal>): Partial<Animal> {
+            return animal;
+        }
+
+        const animal = getAnimal({ name: 'Vaska' });
+    } // Partial<Type> - делает все поля необязательными
+    {
+        interface Animal {
+            name: string;
+            legsCount?: number;
+            volumeStomach?: number;
+        }
+
+        const animalRequired: Required<Animal> = { name: 'Vaska', legsCount: 4, volumeStomach: 2 },
+            animal: Animal = {name: 'Sharik'};
+    } // Required<Type> - делает всае поля обязательными
+    {
+        interface Animal {
+            name: string;
+            legsCount: number;
+            volumeStomach: number;
+        }
+
+        function getAnimal(animal: Readonly<Animal>): Animal{
+            // animal.legsCount = 1;    // error
+            return animal;
+        }
+    } // Readonly<Type> - делает все поля readonly
+    {
+        interface Animal {
+            name: string;
+            legsCount?: number;
+            volumeStomach?: number;
+        }
+
+        type AnimalNamesType = 'ignat' | 'pirat' | 'boris';
+
+        const animal: Record<AnimalNamesType, Animal> = {
+            ignat: { name: 'Ignat' },
+            pirat: { name: 'Pirat', legsCount: 3 },
+            boris: { name: 'Boris' }
+        }
+
+        animal.ignat;
+    } // Record<Keys, Type> - создает тип, где ключи должны быть созданы из типа Keys и иметь тип Type
+    {
+        interface Animal {
+            name: string;
+            legsCount: number;
+            volumeStomach: number;
+        }
+
+        type AnimalPartial = Pick<Animal, "name" | "legsCount">;
+
+        const animal: AnimalPartial = {
+            name: "Shurik",
+            legsCount: 4,
+        }
+    } // Pick -  создаёт тип, который содержит только часть полей
+    {
+        // Инвертируй Pick
+    } // Omit - обратный Pick, пропускает указанные поля
+    {
+        // без примера
+    } // Exclude<Type, ExcludedUnion> - извлекает из типа перечисленные значения типов во втором аргументе
+    {
+        // без примера
+    } // Extract<Type, Uniom> - оставляет в типе только те, которые есть в Union
+    {
+        // без примера
+    } // NotNulleble - извлекает из типа undefined и null
+    {
+        function f1(a: string, b: number, c: boolean): void {
+            console.log(a + b.toString);
+        }
+
+        function f2(arg: {a: string, b: number, c: boolean}): boolean {
+            return arg.c;
+        };
+
+        type T1 = Parameters<typeof f1>;
+        const t1: T1 = ['abc', 123, true];
+
+        type T2 = Parameters<(arg: {a: string, b: number, c: boolean}) => boolean>;
+        const t2: T2 = [{a: '2', b: 124, c: true}];
+
+    } // Parameters<Type> - задаёт тип как кортеж из параметра функции
+    {
+
+    } // ConstructorParameter<Type> - задает тип, как кортеж или массив из фукнции-конструктора
+    {
+
+    } // ReturnType<Type> - тип из возвращаемого значения функции
+    {
+        class C {
+            a: string;
+            b: number = 2;
+            c: boolean = false;
+
+            constructor () {
+                this.a = '1';
+            }
+
+            // private show(): C {
+            //     return this;
+            // }
+        }
+
+        type T1 = InstanceType<typeof C>;
+        const t1: T1= {a: '123', b: 123, c: true};
+        const c1: C = {a: '123', b: 123, c: false};
+
+    } // InstanceType<Type> - создаёт тип из типа класса.
+    {
+        class C {
+            name = 'Boris';
+        }
+
+        function showName(this: C) {
+            log(this.name);
+        }
+
+        showName.call(new C());
+
+        type T1 = ThisParameterType<typeof showName>;
+        // const t1: T1 = 1;
+
+    } // ThisParametrType<Type> - если фукнции передаётся this в параметрах, то извлекает её тип, иначе unknown
+    {
+
+    } // OmitThisParametr<Type> - возвращает тип, из которого вырезан this параметр, если там его и не было, то просто тип.
+    {
+        // https://www.typescriptlang.org/docs/handbook/utility-types.html#thistypetype
+    } // ThisType<Type> - сложнаааа
+    {
+        type T1 = 'a' | 'b' | 'c' | 'd';
+        type T2 = Uppercase<T1>;
+        // type T3 = `${T1 | T2}1`;
+        // type T4 = `${T2}${T1}`;
+
+        const t1: T1 = 'a',
+            t2: T2 = 'A';
+        // const t3: T3 = 'a1',
+            // t4: T4 = 'Aa';
+    } // Uppercase<StringType> and Sting Unions in Types (ругается компилятор)
+
+}

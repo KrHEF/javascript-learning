@@ -144,7 +144,7 @@ let log = (obj = '') => console.log(obj);
     }
     {
         function func3(param) {
-            return param !== null && param !== void 0 ? param : "default";
+            return param ?? "default";
         }
     }
     {
@@ -369,6 +369,88 @@ let log = (obj = '') => console.log(obj);
 {
     function identity(args) {
         return args;
+    }
+}
+{
+    {
+        function getAnimal(animal) {
+            return animal;
+        }
+        const animal = getAnimal({ name: 'Vaska' });
+    }
+    {
+        const animalRequired = { name: 'Vaska', legsCount: 4, volumeStomach: 2 }, animal = { name: 'Sharik' };
+    }
+    {
+        function getAnimal(animal) {
+            return animal;
+        }
+    }
+    {
+        const animal = {
+            ignat: { name: 'Ignat' },
+            pirat: { name: 'Pirat', legsCount: 3 },
+            boris: { name: 'Boris' }
+        };
+        animal.ignat;
+    }
+    {
+        const animal = {
+            name: "Shurik",
+            legsCount: 4,
+        };
+    }
+    {
+    }
+    {
+    }
+    {
+    }
+    {
+    }
+    {
+        function f1(a, b, c) {
+            console.log(a + b.toString);
+        }
+        function f2(arg) {
+            return arg.c;
+        }
+        ;
+        const t1 = ['abc', 123, true];
+        const t2 = [{ a: '2', b: 124, c: true }];
+    }
+    {
+    }
+    {
+    }
+    {
+        class C {
+            constructor() {
+                this.b = 2;
+                this.c = false;
+                this.a = '1';
+            }
+        }
+        const t1 = { a: '123', b: 123, c: true };
+        const c1 = { a: '123', b: 123, c: false };
+    }
+    {
+        class C {
+            constructor() {
+                this.name = 'Boris';
+            }
+        }
+        function showName() {
+            log(this.name);
+        }
+        showName.call(new C());
+    }
+    {
+    }
+    {
+    }
+    {
+        const t1 = 'a', t2 = 'A';
     }
 }
 //# sourceMappingURL=example.js.map
