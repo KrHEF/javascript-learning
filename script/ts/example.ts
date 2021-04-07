@@ -1031,8 +1031,9 @@ let log = (obj: any = '') => console.log(obj);
             _firstName: string,
             _lastName: string,
             private _country: string,
-            private _city: string) {
-                super(_firstName, _lastName);
+            private _city: string
+        ) {
+            super(_firstName, _lastName);
         }
 
         public get country(): string {
@@ -1058,8 +1059,9 @@ let log = (obj: any = '') => console.log(obj);
         constructor(
             _firstName: string,
             _lastName: string,
-            private _branch: string) {
-                super(_firstName, _lastName);
+            private _branch: string
+        ) {
+            super(_firstName, _lastName);
         }
 
         public get branch() : string {
