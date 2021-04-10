@@ -105,3 +105,6 @@ dist
 
 # IDE
 .vscode/
+
+# JS MAP
+*.js.map
