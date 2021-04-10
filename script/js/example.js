@@ -43,6 +43,7 @@ let log = (obj = '') => console.log(obj);
         let t1;
         t1 = ['1', 2];
         t1.push('false', '4');
+        log('t1', t1);
         if (t1[1] === 5)
             log('tuple:' + t1.map((item) => typeof (item)));
     }
