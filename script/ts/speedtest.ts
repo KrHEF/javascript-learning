@@ -1,3 +1,5 @@
+declare let _: any;
+
 interface IIndexingString {
     [key: string]: string;
 }

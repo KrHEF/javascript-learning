@@ -76,7 +76,7 @@ let log = (obj: any = '') => console.log(obj);
 
         let c: Color = Color.Red;
 
-        if (Color.Green === 1) {
+        if (c === 1) {
             //log(Color[0]);      // Empty
             log(Color[c]);      // Red
             log(Color[2]);      // Green
