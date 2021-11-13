@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf8" />
+        <title>Angular JS</title>
+        <link rel="stylesheet" href="style/css/main.css" />
+        <script defer src="node_modules/angular/angular.js"></script>
+        <script defer src="script/js/angular.js"></script>
+    </head>
+    <body >
+        <div data-ng-app="myDemoApp"
+                data-ng-cloak>
+            <h2>2nd app: myDemoApp</h2>
+            <ul data-ng-controller="demoController as demo">
+                <li data-ng-repeat="message in demo.messages">
+                    {{message}}
+                </li>
+            </ul>
+        </div>
+
+        <div data-ng-app
+                data-ng-init="name='world'">
+            <h2>1st app</h2>
+            <label>Name</label>
+            <input data-ng-model="name" />
+            <br />
+            <span>Hello, {{name}}!</span>
+            <p data-ng-bind="name"></p>
+        </div>
+    </body>
+</html>
