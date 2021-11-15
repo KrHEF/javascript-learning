@@ -1,5 +1,7 @@
+let firstBootstrap: boolean = false;
+
 // 2nd app: myDemoApp
-(function(moduleName: string, run: boolean = true) {
+(function(moduleName: string, run: boolean = true): void {
     interface IDataService {
         get: () => string[];
     }
@@ -8,7 +10,9 @@
         messages: string[];
     }
 
-    console.log(moduleName + ' started');
+    if (!run) { return; }
+
+    console.warn('[module] ' + moduleName + ' started');
 
     function DemoDataConstant(): string[] {
         console.log('[constant]');
@@ -27,9 +31,9 @@
         }
     }
 
-    function DemoController(this: any, dataService: IDataService, $rootScope: ng.IRootScopeService): void {
+    function DemoController(this: IDemoController, dataService: IDataService, $rootScope: ng.IRootScopeService): void {
         console.log('[controller] DemoController created');
-        const vm: IDemoController = this as IDemoController;
+        const vm: IDemoController = this;
         setTimeout(() => {
             vm.messages = dataService.get().map((message: string) => `Hello, ${message}` );
             $rootScope.$apply();
@@ -45,14 +49,34 @@
         console.log('[run] RunDemo created');
     }
 
-    if (!run) { return; }
 
     angular.module(moduleName, [])
-        .config(['demoData', DemoConfig])
-        .controller('demoController', ['dataService', '$rootScope', DemoController])
-        .constant('demoData', DemoDataConstant())
-        .run(['$rootScope', '$window', RunDemo])
-        .service('dataService', ['demoData', DataServise]);
+    .config(['demoData', DemoConfig])
+    .controller('demoController', ['dataService', '$rootScope', DemoController])
+    .constant('demoData', DemoDataConstant())
+    .run(['$rootScope', '$window', RunDemo])
+    .service('dataService', ['demoData', DataServise]);
 
-    }('myDemoApp'));
+    const element: HTMLElement | null = document.querySelector(`[data-ng-app="${moduleName}"]`);
+    if (element && firstBootstrap) {
+        angular.bootstrap(element, [moduleName]);
+    } else {
+        firstBootstrap = true;
+    }
+}('myDemoApp'));
 
+// 1st app: myFirstApp
+(function(moduleName: string, run: boolean = true): void {
+    if (!run) { return; }
+
+    console.warn('[module] ' + moduleName + ' started');
+
+    angular.module('myFirstApp', []);
+
+    const element: HTMLElement | null = document.querySelector(`[data-ng-app="${moduleName}"]`);
+    if (element && firstBootstrap) {
+        angular.bootstrap(element, [moduleName]);
+    } else {
+        firstBootstrap = true;
+    }
+})('myFirstApp');
