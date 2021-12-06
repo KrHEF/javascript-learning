@@ -8,16 +8,6 @@
         <script defer src="script/js/angular.js"></script>
     </head>
     <body >
-        <div data-ng-app="myDemoApp"
-                data-ng-cloak>
-            <h2>2nd app: myDemoApp</h2>
-            <ul data-ng-controller="demoController as demo">
-                <li data-ng-repeat="message in demo.messages">
-                    {{message}}
-                </li>
-            </ul>
-        </div>
-
         <div data-ng-app="myFirstApp"
                 data-ng-init="name='world'">
             <h2>1st app: myFirstApp</h2>
@@ -27,5 +17,16 @@
             <span>Hello, {{name}}!</span>
             <p data-ng-bind="name"></p>
         </div>
+
+        <div data-ng-app="mySecondApp"
+                data-ng-cloak>
+            <h2>2nd app: myDemoApp</h2>
+            <ul data-ng-controller="demoController as demo">
+                <li data-ng-repeat="message in demo.messages">
+                    {{message}}
+                </li>
+            </ul>
+        </div>
+
     </body>
 </html>

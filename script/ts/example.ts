@@ -764,8 +764,12 @@ let log = (obj: any = '') => console.log(obj);
         // без примера
     } // Extract<Type, Uniom> - оставляет в типе только те, которые есть в Union
     {
+        // let a: boolean;
+        // a = null;
+
+
         // без примера
-    } // NotNulleble - извлекает из типа undefined и null
+    } // NonNullable - извлекает из типа undefined и null
     {
         function f1(a: string, b: number, c: boolean): void {
             console.log(a + b.toString);
@@ -783,10 +787,8 @@ let log = (obj: any = '') => console.log(obj);
 
     } // Parameters<Type> - задаёт тип как кортеж из параметра функции
     {
-
     } // ConstructorParameter<Type> - задает тип, как кортеж или массив из фукнции-конструктора
     {
-
     } // ReturnType<Type> - тип из возвращаемого значения функции
     {
         class C {
@@ -804,8 +806,14 @@ let log = (obj: any = '') => console.log(obj);
         }
 
         type T1 = InstanceType<typeof C>;
+        type T2 = C;
         const t1: T1= {a: '123', b: 123, c: true};
+        const t2: T2= {a: '123', b: 123, c: true};
         const c1: C = {a: '123', b: 123, c: false};
+
+        // const tt1 = new T1();
+        // const tt2 = new T2();
+        const tt3 = new C();
 
     } // InstanceType<Type> - создаёт тип из типа класса.
     {
@@ -824,7 +832,6 @@ let log = (obj: any = '') => console.log(obj);
 
     } // ThisParametrType<Type> - если фукнции передаётся this в параметрах, то извлекает её тип, иначе unknown
     {
-
     } // OmitThisParametr<Type> - возвращает тип, из которого вырезан this параметр, если там его и не было, то просто тип.
     {
         // https://www.typescriptlang.org/docs/handbook/utility-types.html#thistypetype
@@ -1001,7 +1008,6 @@ let log = (obj: any = '') => console.log(obj);
     // log(counter());
     // log(counter());
     // log(counter());
-
     class People {
 
         constructor(
@@ -1071,6 +1077,13 @@ let log = (obj: any = '') => console.log(obj);
             return super.getInfo() + ` Branch: ${this.branch} department`;
         }
     }
+
+    type T1 = 'a' | 'b' | 'c';
+    type ITest = {
+        [key in T1]: string;
+    };
+
+    console.log('123');
 }
 
 type TRules = IRules | IRule;
