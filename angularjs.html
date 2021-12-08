@@ -26,6 +26,18 @@
                     {{message}}
                 </li>
             </ul>
+            <my-demo></my-demo>
+        </div>
+
+        <div data-ng-app="my3dApp"
+                data-ng-cloak>
+            <h2>3d app: my3dApp</h2>
+            <ul data-ng-controller="demoController1 as demo1">
+                <li>{{demo1.a}}</li>
+            </ul>
+            <ul data-ng-controller="demoController2 as demo2">
+                <li>{{demo2.a}}</li>
+            </ul>
         </div>
 
     </body>

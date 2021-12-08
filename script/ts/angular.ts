@@ -23,7 +23,7 @@ let firstBootstrap: boolean = false;
         get: () => string[];
     }
 
-    interface IDemoController {
+    interface   IDemoController {
         messages: string[];
     }
 
@@ -39,7 +39,7 @@ let firstBootstrap: boolean = false;
         ];
     }
 
-    function DemoServise(demoData: string[]): IDataService {
+    function DemoServise(demoData: string[], demoProvider: TestProvider): IDataService {
         console.log('[service] DemoServise created');
         return {
             get: () => {
@@ -51,6 +51,7 @@ let firstBootstrap: boolean = false;
     function DemoController(
         this: IDemoController,
         dataService: IDataService,
+        demoFactory: string,
         $rootScope: ng.IRootScopeService
     ): void {
         console.log('[controller] DemoController created');
@@ -62,9 +63,11 @@ let firstBootstrap: boolean = false;
         }, 2000)
     }
 
-    function DemoConfig(demoConstant: string[]) {
+    function DemoConfig(demoConstant: string[], demoProvider: DemoProvider) {
         console.log('[config] DemoConfig created');
         demoConstant.push('3d world');
+
+        demoProvider.setConfig(true);
     }
 
     function DemoValue(): string {
@@ -76,14 +79,65 @@ let firstBootstrap: boolean = false;
         console.log('[run] RunDemo created');
     }
 
+    function DemoFactory(): string {
+        console.log('[factory] DemoFactory created');
+        return 'factory';
+    }
+
+    class TestProvider {
+        protected config = false;
+
+        constructor(config: boolean) {
+            console.log('[provider] TestProvider created');
+            this.config = config;
+        }
+
+        log(): void {
+            console.log('config:', this.config);
+        }
+    }
+
+    class DemoProvider {
+        protected config = false;
+
+        constructor() {
+            console.log('[provider] DemoProvider created');
+        }
+
+        setConfig(value: boolean): void {
+            this.config = !!value;
+        }
+
+        $get = (): TestProvider => {
+            console.log('[provider] get TestProvider from DemoProvider');
+            return new TestProvider(this.config);
+        };
+    }
+
+    function DemoDirective() {
+        console.log('[directive] DemoDirective created');
+
+        return {
+            restrict: 'E',
+            scope: {},
+            link: ($scope: angular.IScope, $element: JQLite) => {
+                console.log('[directive] DemoDirective linked');
+                $element.text('test');
+            },
+        };
+    }
 
     angular.module(moduleName, [])
-    .config(['demoConstant', DemoConfig])
-    .controller('demoController', ['demoService', '$rootScope', DemoController])
+    .config(['demoConstant', 'demoProvider', DemoConfig])
+    .controller('demoController', ['demoService', 'demoFactory', '$rootScope', 'demo', DemoController])
     .value('demoValue', DemoValue())
     .constant('demoConstant', DemoConstant())
     .run(['$rootScope', '$window', RunDemo])
-    .service('demoService', ['demoConstant', DemoServise]);
+    .service('demoService', ['demoConstant', 'demo', DemoServise])
+    .factory('demoFactory', [DemoFactory])
+    .provider('demo', DemoProvider)
+    .directive('myDemo', [DemoDirective])
+    ;
 
     const element: HTMLElement | null = document.querySelector(`[data-ng-app="${moduleName}"]`);
     if (element && firstBootstrap) {
@@ -92,3 +146,52 @@ let firstBootstrap: boolean = false;
         firstBootstrap = true;
     }
 }('mySecondApp'));
+
+
+(function(moduleName: string, run: boolean = true) {
+    interface ITestService {
+        a: number;
+        go(): void;
+    }
+
+    if (!run) { return; }
+    console.warn('[module] ' + moduleName + ' started');
+
+    class TestService {
+        a = 0;
+        go() {
+            this.a++;
+            console.log('a: ' + this.a);
+        }
+    }
+
+    function DemoController1(this: any, testService: ITestService) {
+        console.log('DemoController1 created');
+        console.log('testService', testService);
+        testService.go();
+        this.a = testService.a;
+    }
+
+    function DemoController2(this: any, testService: ITestService) {
+        testService.go();
+        this.a = testService.a;
+    }
+
+
+    angular.module(moduleName, [])
+    // .factory('TestService', () => {
+    //     return new TestService();
+    // })
+    .service('TestService', TestService)
+    .controller('demoController1', ['TestService', DemoController1])
+    .controller('demoController2', ['TestService', DemoController2])
+    ;
+
+    const element: HTMLElement | null = document.querySelector(`[data-ng-app="${moduleName}"]`);
+    if (element && firstBootstrap) {
+        angular.bootstrap(element, [moduleName]);
+    } else {
+        firstBootstrap = true;
+    }
+
+}('my3dApp', false));
