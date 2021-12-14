@@ -75,7 +75,8 @@ if (0) {
         func: () => codeWrapper?.tagName,
     });
     addFunctionMeta({ title: "innerHtml",
-        warning: "Есть только у элементов", func: () => codeWrapper.innerHTML = "<b>Привет, мир!</b>",
+        warning: "Есть только у элементов",
+        func: () => codeWrapper.innerHTML = "<b>Привет, мир!</b>",
     });
     addFunctionMeta({ title: "outerHtml",
         warning: "Не меняет элемент!",
@@ -100,7 +101,8 @@ if (0) {
     addFunctionMeta({ title: "textContent",
         func: () => codeWrapper?.textContent,
     });
-    addFunctionMeta({ title: "hidden", func: () => setInterval(() => codeWrapper.hidden = !codeWrapper?.hidden, 5e2),
+    addFunctionMeta({ title: "hidden",
+        func: () => setInterval(() => codeWrapper.hidden = !codeWrapper?.hidden, 5e2),
     });
 }
 if (0) {
@@ -146,7 +148,8 @@ if (0) {
     let codeWrapper = document.getElementById("code-wrapper");
     let codeWrapperClone;
     let span, text;
-    addFunctionMeta({ title: "document.createElement", func: () => {
+    addFunctionMeta({ title: "document.createElement",
+        func: () => {
             span = document.createElement('span');
             return span;
         },
@@ -185,7 +188,8 @@ if (0) {
             span.after(spanRight);
         },
     });
-    addFunctionMeta({ title: "replaceWith - замена node", func: () => {
+    addFunctionMeta({ title: "replaceWith - замена node",
+        func: () => {
             let spanReplace = document.createElement('span');
             spanReplace.innerHTML = 'Hello, World!';
             span.replaceWith(spanReplace);
@@ -198,13 +202,15 @@ if (0) {
     addFunctionMeta({ title: "insertAdjacentText - вставка текста",
         func: () => codeWrapper?.insertAdjacentText("beforeend", "<p> Вставка текста.</p>"),
     });
-    addFunctionMeta({ title: "insertAdjacentElement - вставка элемента", func: () => {
+    addFunctionMeta({ title: "insertAdjacentElement - вставка элемента",
+        func: () => {
             let divElem = document.createElement('div');
             divElem.innerHTML = 'Другой текст';
             codeWrapper?.insertAdjacentElement("afterbegin", divElem);
         },
     });
-    addFunctionMeta({ title: "cloneNode - клонирование элемента", func: () => {
+    addFunctionMeta({ title: "cloneNode - клонирование элемента",
+        func: () => {
             codeWrapperClone = codeWrapper?.cloneNode(false);
             return codeWrapperClone;
         },
@@ -213,7 +219,8 @@ if (0) {
         warning: "Элемент удаляется только из DOM, если была ссылка на него, то он остается в памяти",
         func: () => codeWrapper?.remove(),
     });
-    addFunctionMeta({ title: "DocumentFragment - обертка, которая удаляется при вставке, т. е. не имеет тега, а используется как контейнер", func: () => {
+    addFunctionMeta({ title: "DocumentFragment - обертка, которая удаляется при вставке, т. е. не имеет тега, а используется как контейнер",
+        func: () => {
             let fragment = new DocumentFragment();
             fragment.append(codeWrapperClone);
             document.body.append(fragment);
@@ -226,7 +233,8 @@ if (0) {
 }
 if (0) {
     const codeWrapper = document.querySelector("#code-wrapper");
-    addFunctionMeta({ title: "Вся строка с названиями класса elem.className", func: () => codeWrapper.className += " custom",
+    addFunctionMeta({ title: "Вся строка с названиями класса elem.className",
+        func: () => codeWrapper.className += " custom",
     });
     addFunctionMeta({ title: "Специальный объект с методами доступа к классам elem.classList",
         warning: "Доступные методы: add, remove, toggle, contains",
@@ -236,19 +244,22 @@ if (0) {
         },
     });
     addFunctionMeta({ title: "Задание стиля элемента через объект elem.style",
-        warning: "Для свойства из нескольких слов используется camelCase", func: () => {
+        warning: "Для свойства из нескольких слов используется camelCase",
+        func: () => {
             codeWrapper.style.backgroundColor = "red";
             codeWrapper.style.height = "1vh";
             return codeWrapper?.style;
         },
     });
-    addFunctionMeta({ title: "Очистка стиля через elem.style.prop = \"\"", func: () => {
+    addFunctionMeta({ title: "Очистка стиля через elem.style.prop = \"\"",
+        func: () => {
             codeWrapper.style.backgroundColor = "";
             return codeWrapper?.style;
         },
     });
     addFunctionMeta({ title: "Задание нескольких стилей строкой через elem.style.cssText",
-        warning: "Удаляет все существующие стили в атрибуте style", func: () => {
+        warning: "Удаляет все существующие стили в атрибуте style",
+        func: () => {
             codeWrapper.style.cssText = "background-color: yellow; width: 25vw; height: 2vh;";
         },
     });

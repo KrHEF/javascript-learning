@@ -1,5 +1,7 @@
 "use strict";
 class Person {
+    floor;
+    goTo;
     constructor(floor, goTo) {
         this.floor = floor;
         this.goTo = goTo;
@@ -12,9 +14,10 @@ class Person {
     }
 }
 class Floor {
+    number;
+    _queueUp = [];
+    _queueDown = [];
     constructor(number) {
-        this._queueUp = [];
-        this._queueDown = [];
         this.number = number;
     }
     get isUpPressed() {
@@ -39,10 +42,12 @@ class Floor {
     }
     setLiftOnTheFloor(lift) {
         lift.letOutPersons();
+        lift.selectDirection();
         if (lift.direction === 'up') {
             if (this._queueUp.length) {
                 lift.letInPersons(this._queueUp.splice(0, lift.freeSpace));
             }
+            lift.clearQueue('up');
             if (this._queueUp.length) {
                 lift.wait(this.number, 'up');
             }
@@ -51,6 +56,7 @@ class Floor {
             if (this._queueDown.length) {
                 lift.letInPersons(this._queueDown.splice(0, lift.freeSpace));
             }
+            lift.clearQueue('down');
             if (this._queueDown.length) {
                 lift.wait(this.number, 'down');
             }
@@ -62,6 +68,8 @@ class Floor {
     ;
 }
 class Building {
+    _floors;
+    _lift;
     constructor(floorCount, liftCapacity) {
         this._floors = (new Array(floorCount)).fill(0).map((nothing, index) => new Floor(index));
         this._lift = new Lift(liftCapacity);
@@ -94,15 +102,16 @@ class Building {
     }
 }
 class Lift {
+    _capacity;
+    _currentFloor = 0;
+    _log = [];
+    _direction = 'up';
+    _persons = new Set();
+    _personsGoTo = new Map();
+    _queueUp = new Set();
+    _queueDown = new Set();
+    _iterationCount = 1e6;
     constructor(capacity) {
-        this._currentFloor = 0;
-        this._log = [];
-        this._direction = 'up';
-        this._persons = new Set();
-        this._personsGoTo = new Map();
-        this._queueUp = new Set();
-        this._queueDown = new Set();
-        this._iterationCount = 1e6;
         this._capacity = capacity;
     }
     get direction() {
@@ -118,6 +127,9 @@ class Lift {
         return [...this._log];
     }
     get needToStop() {
+        if (this._personsGoTo.has(this._currentFloor)) {
+            return true;
+        }
         if (this.direction === 'up') {
             return this._queueUp.has(this._currentFloor)
                 || (this.needToChangeDirection && this._queueDown.has(this._currentFloor));
@@ -128,29 +140,41 @@ class Lift {
         }
     }
     get needToChangeDirection() {
-        if (!this._queueDown.size && !this._queueUp.size) {
+        if (!this._queueDown.size && !this._queueUp.size && !this._persons.size) {
             return (this._direction === 'up');
         }
-        if ((this._direction === 'up')
-            && (this._currentFloor >= Math.max(...this._queueUp.keys(), ...this._queueDown.keys()))) {
+        if (this._direction === 'up') {
+            if (this._queueUp.size && this._currentFloor <= Math.max(...this._queueUp.keys())) {
+                return false;
+            }
+            if (this._queueDown.size && this._currentFloor < Math.max(...this._queueDown.keys())) {
+                return false;
+            }
+            if (this._currentFloor < Math.max(...this._personsGoTo.keys())) {
+                return false;
+            }
             return true;
         }
-        if ((this._direction === 'down')
-            && (this._currentFloor <= Math.min(...this._queueDown.keys(), ...this._queueDown.keys()))) {
+        else {
+            if (this._queueDown.size && this._currentFloor >= Math.min(...this._queueDown.keys())) {
+                return false;
+            }
+            if (this._queueUp.size && this._currentFloor > Math.min(...this._queueUp.keys())) {
+                return false;
+            }
+            if (this._currentFloor > Math.min(...this._personsGoTo.keys())) {
+                return false;
+            }
             return true;
         }
-        return false;
     }
     next() {
         if (--this._iterationCount <= 0) {
             throw new Error('The lift is broken');
         }
-        if (!this._queueDown.size && !this._queueUp.size && !this._currentFloor) {
+        if (!this._queueDown.size && !this._queueUp.size && !this._persons.size && !this._currentFloor) {
             this._log.push(0);
             return false;
-        }
-        if (this.needToChangeDirection) {
-            this._direction = (this._direction === 'up') ? 'down' : 'up';
         }
         if (this.direction === 'up') {
             this._currentFloor++;
@@ -161,9 +185,15 @@ class Lift {
         return true;
     }
     open() {
-        this._queueUp.delete(this._currentFloor);
-        this._queueDown.delete(this._currentFloor);
         this._log.push(this._currentFloor);
+    }
+    clearQueue(direction) {
+        if (direction === 'up') {
+            this._queueUp.delete(this._currentFloor);
+        }
+        else {
+            this._queueDown.delete(this._currentFloor);
+        }
     }
     wait(floor, direction) {
         if (direction === 'up') {
@@ -180,7 +210,6 @@ class Lift {
                 this._personsGoTo.set(person.goTo, []);
             }
             this._personsGoTo.get(person.goTo).push(person);
-            this.wait(person.goTo, person.direction);
         });
     }
     letOutPersons() {
@@ -188,6 +217,11 @@ class Lift {
         this._personsGoTo.delete(this._currentFloor);
         result.forEach((person) => this._persons.delete(person));
         return result;
+    }
+    selectDirection() {
+        if (this.needToChangeDirection) {
+            this._direction = (this._direction === 'up') ? 'down' : 'up';
+        }
     }
 }
 const theLift = (queues, capacity) => {
@@ -230,5 +264,33 @@ it("down", function () {
     var result = theLift(queues, 5);
     console.log(result, [0, 2, 1, 0]);
     return result.join('') === [0, 2, 1, 0].join('');
+});
+it("up and up", function () {
+    var queues = [
+        [],
+        [3],
+        [4],
+        [],
+        [5],
+        [],
+        [],
+    ];
+    var result = theLift(queues, 5);
+    console.log(result, [0, 1, 2, 3, 4, 5, 0]);
+    return result.join('') === [0, 1, 2, 3, 4, 5, 0].join('');
+});
+it("down and down", function () {
+    var queues = [
+        [],
+        [0],
+        [],
+        [],
+        [2],
+        [3],
+        [],
+    ];
+    var result = theLift(queues, 5);
+    console.log(result, [0, 5, 4, 3, 2, 1, 0]);
+    return result.join('') === [0, 5, 4, 3, 2, 1, 0].join('');
 });
 //# sourceMappingURL=lift.js.map

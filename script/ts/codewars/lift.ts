@@ -5,6 +5,8 @@ type TLiftOnTheFloor = Pick<Lift,
     | 'freeSpace'
     | 'letInPersons'
     | 'letOutPersons'
+    | 'selectDirection'
+    | 'clearQueue'
     | 'wait'
     >;
 
@@ -58,12 +60,14 @@ class Floor {
 
     public setLiftOnTheFloor(lift: TLiftOnTheFloor): void {
         lift.letOutPersons();
+        lift.selectDirection();
 
         if (lift.direction === 'up') {
             if (this._queueUp.length) {
                 lift.letInPersons(this._queueUp.splice(0, lift.freeSpace));
             }
 
+            lift.clearQueue('up');
             if (this._queueUp.length) {
                 lift.wait(this.number, 'up');
             }
@@ -72,6 +76,7 @@ class Floor {
                 lift.letInPersons(this._queueDown.splice(0, lift.freeSpace));
             }
 
+            lift.clearQueue('down');
             if (this._queueDown.length) {
                 lift.wait(this.number, 'down');
             }
@@ -161,6 +166,8 @@ class Lift implements TLiftOnTheFloor {
     }
 
     public get needToStop(): boolean {
+        if (this._personsGoTo.has(this._currentFloor)) { return true; }
+
         if (this.direction === 'up') {
             return this._queueUp.has(this._currentFloor)
             || (this.needToChangeDirection && this._queueDown.has(this._currentFloor));
@@ -168,24 +175,31 @@ class Lift implements TLiftOnTheFloor {
             return this._queueDown.has(this._currentFloor)
             || (this.needToChangeDirection && this._queueUp.has(this._currentFloor));
         }
+
     }
 
     private get needToChangeDirection(): boolean {
-        if (!this._queueDown.size && !this._queueUp.size) {
+        if (!this._queueDown.size && !this._queueUp.size && !this._persons.size) {
             return (this._direction === 'up');
         }
 
-        if ((this._direction === 'up')
-        && (this._currentFloor >= Math.max(...this._queueUp.keys(), ...this._queueDown.keys()))) {
+        if (this._direction === 'up') {
+            if (this._queueUp.size && this._currentFloor <= Math.max(...this._queueUp.keys())) { return false; }
+
+            if (this._queueDown.size && this._currentFloor < Math.max(...this._queueDown.keys())) { return false; }
+
+            if (this._currentFloor < Math.max(...this._personsGoTo.keys())) { return false; }
+
+            return true;
+        } else {
+            if (this._queueDown.size && this._currentFloor >= Math.min(...this._queueDown.keys())) { return false; }
+
+            if (this._queueUp.size && this._currentFloor > Math.min(...this._queueUp.keys())) { return false; }
+
+            if (this._currentFloor > Math.min(...this._personsGoTo.keys())) { return false; }
+
             return true;
         }
-
-        if ((this._direction === 'down')
-        && (this._currentFloor <= Math.min(...this._queueDown.keys(), ...this._queueDown.keys()))) {
-            return true;
-        }
-
-        return false;
     }
 
 
@@ -194,13 +208,9 @@ class Lift implements TLiftOnTheFloor {
             throw new Error('The lift is broken');
         }
 
-        if (!this._queueDown.size && !this._queueUp.size && !this._currentFloor) {
+        if (!this._queueDown.size && !this._queueUp.size && !this._persons.size && !this._currentFloor) {
             this._log.push(0);
             return false;
-        }
-
-        if (this.needToChangeDirection) {
-            this._direction = (this._direction === 'up') ? 'down' : 'up';
         }
 
         if (this.direction === 'up') {
@@ -213,9 +223,15 @@ class Lift implements TLiftOnTheFloor {
     }
 
     public open(): void {
-        this._queueUp.delete(this._currentFloor);
-        this._queueDown.delete(this._currentFloor);
         this._log.push(this._currentFloor);
+    }
+
+    public clearQueue(direction: TDirection): void {
+        if (direction === 'up') {
+            this._queueUp.delete(this._currentFloor);
+        } else {
+            this._queueDown.delete(this._currentFloor);
+        }
     }
 
     public wait(floor: number, direction: TDirection): void {
@@ -234,7 +250,7 @@ class Lift implements TLiftOnTheFloor {
             }
             this._personsGoTo.get(person.goTo)!.push(person);
 
-            this.wait(person.goTo, person.direction);
+            // this.wait(person.goTo, person.direction);
         });
     }
 
@@ -246,6 +262,13 @@ class Lift implements TLiftOnTheFloor {
 
         return result;
     }
+
+    public selectDirection(): void {
+        if (this.needToChangeDirection) {
+            this._direction = (this._direction === 'up') ? 'down' : 'up';
+        }
+    }
+
 }
 
 
@@ -297,4 +320,34 @@ it("down", function() {
     var result: number[] = theLift(queues, 5);
     console.log(result, [0,2,1,0]);
     return result.join('') === [0,2,1,0].join('');
+  });
+
+  it("up and up", function() {
+    var queues = [
+      [], // G
+      [3], // 1
+      [4], // 2
+      [], // 3
+      [5], // 4
+      [], // 5
+      [], // 6
+    ];
+    var result: number[] = theLift(queues, 5);
+    console.log(result, [0,1,2,3,4,5,0]);
+    return result.join('') === [0,1,2,3,4,5,0].join('');
+  });
+
+ it("down and down", function() {
+    var queues = [
+      [], // G
+      [0], // 1
+      [], // 2
+      [], // 3
+      [2], // 4
+      [3], // 5
+      [], // 6
+    ];
+    var result: number[] = theLift(queues, 5);
+    console.log(result, [0,5,4,3,2,1,0]);
+    return result.join('') === [0,5,4,3,2,1,0].join('');
   });
