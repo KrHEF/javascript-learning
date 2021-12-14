@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-      "module": "commonjs",
+      "module": "ESNext",
       "outDir": "script/js",
       "removeComments": true,
       "sourceMap": true,
