@@ -120,16 +120,20 @@ let log = (obj = '') => console.log(obj);
     }
     {
         class Fish {
+            constructor() {
+                this.fly = 0;
+            }
             swim() {
             }
             ;
-            fly = 0;
         }
         class Bird {
+            constructor() {
+                this.swim = "";
+            }
             fly() {
             }
             ;
-            swim = "";
         }
         let pet = (Math.random() > 0.5) ? new Bird() : new Fish();
         if ("fly" in pet && typeof (pet.fly) == 'function')
@@ -201,8 +205,8 @@ let log = (obj = '') => console.log(obj);
     }
     {
         class Clock {
-            currentTime = new Date;
             constructor(hour, minute) {
+                this.currentTime = new Date;
             }
             setTime(date) {
                 this.currentTime = date;
@@ -217,7 +221,6 @@ let log = (obj = '') => console.log(obj);
     }
     {
         class Control {
-            state;
         }
         class Button extends Control {
             select() { }
@@ -308,10 +311,6 @@ let log = (obj = '') => console.log(obj);
 {
     {
         class Animal {
-            name;
-            hasTail;
-            id;
-            static ids = 0;
             constructor(name, hasTail = false) {
                 this.name = name;
                 this.hasTail = hasTail;
@@ -321,6 +320,7 @@ let log = (obj = '') => console.log(obj);
                 log(`${this.name} moved ${distanceInMeters} m.`);
             }
         }
+        Animal.ids = 0;
         class Dog extends Animal {
             constructor(name) {
                 super(name, true);
@@ -333,8 +333,6 @@ let log = (obj = '') => console.log(obj);
     }
     {
         class Animal {
-            name;
-            hasTail;
             constructor(name, hasTail = false) {
                 this.name = name;
                 this.hasTail = hasTail;
@@ -346,8 +344,6 @@ let log = (obj = '') => console.log(obj);
     }
     {
         class Animal {
-            name;
-            hasTail;
             constructor(name, hasTail = false) {
                 this.name = name;
                 this.hasTail = hasTail;
@@ -368,8 +364,10 @@ let log = (obj = '') => console.log(obj);
     }
     {
         class Point {
-            x = 0;
-            y = 0;
+            constructor() {
+                this.x = 0;
+                this.y = 0;
+            }
         }
         let point3d = { x: 1, y: 2, z: 3 };
     }
@@ -433,10 +431,9 @@ let log = (obj = '') => console.log(obj);
     }
     {
         class C {
-            a;
-            b = 2;
-            c = false;
             constructor() {
+                this.b = 2;
+                this.c = false;
                 this.a = '1';
             }
         }
@@ -445,7 +442,9 @@ let log = (obj = '') => console.log(obj);
     }
     {
         class C {
-            name = 'Boris';
+            constructor() {
+                this.name = 'Boris';
+            }
         }
         function showName() {
         }
@@ -470,7 +469,9 @@ let log = (obj = '') => console.log(obj);
             };
         }
         let Test = class Test {
-            a = 0;
+            constructor() {
+                this.a = 0;
+            }
         };
         Test = __decorate([
             color('green')
@@ -491,8 +492,6 @@ let log = (obj = '') => console.log(obj);
             };
         }
         let C = class C {
-            static Sum;
-            x;
             constructor(x) {
                 this.x = x;
             }
@@ -584,8 +583,6 @@ let log = (obj = '') => console.log(obj);
     }
     let counter = makeCounter();
     class People {
-        _firstName;
-        _lastName;
         constructor(_firstName, _lastName) {
             this._firstName = _firstName;
             this._lastName = _lastName;
@@ -604,8 +601,6 @@ let log = (obj = '') => console.log(obj);
         }
     }
     class User extends People {
-        _country;
-        _city;
         constructor(_firstName, _lastName, _country, _city) {
             super(_firstName, _lastName);
             this._country = _country;
@@ -625,7 +620,6 @@ let log = (obj = '') => console.log(obj);
         }
     }
     class Employee extends People {
-        _branch;
         constructor(_firstName, _lastName, _branch) {
             super(_firstName, _lastName);
             this._branch = _branch;

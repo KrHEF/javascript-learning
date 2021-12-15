@@ -89,48 +89,6 @@ class Floor {
 
 }
 
-class Building {
-    private _floors: Floor[];
-    private _lift: Lift;
-
-    constructor(floorCount: number, liftCapacity: number) {
-        this._floors = (new Array(floorCount)).fill(0).map((nothing: unknown, index: number) => new Floor(index));
-        this._lift = new Lift(liftCapacity);
-    }
-
-    public get liftLog(): number[] {
-        return this._lift.log;
-    }
-
-    public calculate(queues: number[][]): void {
-        this.init(queues);
-
-        this.openLiftOnTheFloor();
-        while (this._lift.next()) {
-            if (this._lift.needToStop) {
-                this.openLiftOnTheFloor();
-            }
-        }
-    }
-
-    private init(queues: number[][]): void {
-        queues.forEach((queue: number[], floorNumber: number) => {
-            const floor: Floor = this._floors[floorNumber];
-            queue.forEach((goTo: number) => {
-                const person: Person = new Person(floorNumber, goTo);
-                floor.addPerson(person);
-
-                this._lift.wait(person.floor, person.direction);
-            });
-        });
-    }
-
-    private openLiftOnTheFloor(): void {
-        this._lift.open();
-        this._floors[this._lift.currentFloor].setLiftOnTheFloor(this._lift);
-    }
-}
-
 class Lift implements TLiftOnTheFloor {
 
     private readonly _capacity: number;
@@ -141,7 +99,7 @@ class Lift implements TLiftOnTheFloor {
     private _personsGoTo: Map<number, Person[]> = new Map();
 
     private _queueUp: Set<number> = new Set();
-    private _queueDown: Set<number> = new Set();
+    private _queueDown: Set<number>  = new Set();
 
     private _iterationCount = 1e6;
 
@@ -271,13 +229,54 @@ class Lift implements TLiftOnTheFloor {
 
 }
 
+class Building {
+    private _floors: Floor[];
+    private _lift: Lift;
+
+    constructor(floorCount: number, liftCapacity: number) {
+        this._floors = (new Array(floorCount)).fill(0).map((nothing: unknown, index: number) => new Floor(index));
+        this._lift = new Lift(liftCapacity);
+    }
+
+    public get liftLog(): number[] {
+        return this._lift.log;
+    }
+
+    public init(queues: number[][]): void {
+        queues.forEach((queue: number[], floorNumber: number) => {
+            const floor: Floor = this._floors[floorNumber];
+
+            queue.forEach((goTo: number) => {
+                const person: Person = new Person(floorNumber, goTo);
+                floor.addPerson(person);
+
+                this._lift.wait(person.floor, person.direction);
+            });
+        });
+    }
+
+    public calc(): void {
+        this.openLiftOnTheFloor();
+        while (this._lift.next()) {
+            if (this._lift.needToStop) {
+                this.openLiftOnTheFloor();
+            }
+        }
+    }
+
+    private openLiftOnTheFloor(): void {
+        this._lift.open();
+        this._floors[this._lift.currentFloor].setLiftOnTheFloor(this._lift);
+    }
+}
 
 
 const theLift = (queues: number[][], capacity: number): number[] => {
     const building: Building = new Building(queues.length, capacity);
 
+    building.init(queues);
     try {
-        building.calculate(queues);
+        building.calc();
     } finally {
         console.log(building);
     }
