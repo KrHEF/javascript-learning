@@ -1,7 +1,5 @@
 "use strict";
 class Person {
-    floor;
-    goTo;
     constructor(floor, goTo) {
         this.floor = floor;
         this.goTo = goTo;
@@ -14,10 +12,9 @@ class Person {
     }
 }
 class Floor {
-    number;
-    _queueUp = [];
-    _queueDown = [];
     constructor(number) {
+        this._queueUp = [];
+        this._queueDown = [];
         this.number = number;
     }
     get isUpPressed() {
@@ -67,51 +64,16 @@ class Floor {
     }
     ;
 }
-class Building {
-    _floors;
-    _lift;
-    constructor(floorCount, liftCapacity) {
-        this._floors = (new Array(floorCount)).fill(0).map((nothing, index) => new Floor(index));
-        this._lift = new Lift(liftCapacity);
-    }
-    get liftLog() {
-        return this._lift.log;
-    }
-    calculate(queues) {
-        this.init(queues);
-        this.openLiftOnTheFloor();
-        while (this._lift.next()) {
-            if (this._lift.needToStop) {
-                this.openLiftOnTheFloor();
-            }
-        }
-    }
-    init(queues) {
-        queues.forEach((queue, floorNumber) => {
-            const floor = this._floors[floorNumber];
-            queue.forEach((goTo) => {
-                const person = new Person(floorNumber, goTo);
-                floor.addPerson(person);
-                this._lift.wait(person.floor, person.direction);
-            });
-        });
-    }
-    openLiftOnTheFloor() {
-        this._lift.open();
-        this._floors[this._lift.currentFloor].setLiftOnTheFloor(this._lift);
-    }
-}
 class Lift {
-    _capacity;
-    _currentFloor = 0;
-    _log = [];
-    _direction = 'up';
-    _persons = new Set();
-    _personsGoTo = new Map();
-    _queueUp = new Set();
-    _queueDown = new Set();
-    _iterationCount = 1e6;
     constructor(capacity) {
+        this._currentFloor = 0;
+        this._log = [];
+        this._direction = 'up';
+        this._persons = new Set();
+        this._personsGoTo = new Map();
+        this._queueUp = new Set();
+        this._queueDown = new Set();
+        this._iterationCount = 1e6;
         this._capacity = capacity;
     }
     get direction() {
@@ -224,10 +186,42 @@ class Lift {
         }
     }
 }
+class Building {
+    constructor(floorCount, liftCapacity) {
+        this._floors = (new Array(floorCount)).fill(0).map((nothing, index) => new Floor(index));
+        this._lift = new Lift(liftCapacity);
+    }
+    get liftLog() {
+        return this._lift.log;
+    }
+    init(queues) {
+        queues.forEach((queue, floorNumber) => {
+            const floor = this._floors[floorNumber];
+            queue.forEach((goTo) => {
+                const person = new Person(floorNumber, goTo);
+                floor.addPerson(person);
+                this._lift.wait(person.floor, person.direction);
+            });
+        });
+    }
+    calc() {
+        this.openLiftOnTheFloor();
+        while (this._lift.next()) {
+            if (this._lift.needToStop) {
+                this.openLiftOnTheFloor();
+            }
+        }
+    }
+    openLiftOnTheFloor() {
+        this._lift.open();
+        this._floors[this._lift.currentFloor].setLiftOnTheFloor(this._lift);
+    }
+}
 const theLift = (queues, capacity) => {
     const building = new Building(queues.length, capacity);
+    building.init(queues);
     try {
-        building.calculate(queues);
+        building.calc();
     }
     finally {
         console.log(building);
