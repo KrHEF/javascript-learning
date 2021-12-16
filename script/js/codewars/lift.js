@@ -1,4 +1,9 @@
 "use strict";
+var Direction;
+(function (Direction) {
+    Direction[Direction["UP"] = 1] = "UP";
+    Direction[Direction["DOWN"] = -1] = "DOWN";
+})(Direction || (Direction = {}));
 class Person {
     constructor(floor, goTo) {
         this.floor = floor;
@@ -38,8 +43,11 @@ class Floor {
         }
     }
     setLiftOnTheFloor(lift) {
-        lift.letOutPersons();
-        lift.selectDirection();
+        if (this.isPressed) {
+        }
+        else {
+            lift.changeDirection();
+        }
         if (lift.direction === 'up') {
             if (this._queueUp.length) {
                 lift.letInPersons(this._queueUp.splice(0, lift.freeSpace));
@@ -148,9 +156,11 @@ class Lift {
     }
     open() {
         this._log.push(this._currentFloor);
+        this.clearQueue();
+        this.letOutPersons();
     }
-    clearQueue(direction) {
-        if (direction === 'up') {
+    clearQueue() {
+        if (this.direction === 'up') {
             this._queueUp.delete(this._currentFloor);
         }
         else {
@@ -184,6 +194,9 @@ class Lift {
         if (this.needToChangeDirection) {
             this._direction = (this._direction === 'up') ? 'down' : 'up';
         }
+    }
+    changeDirection() {
+        return false;
     }
 }
 class Building {
