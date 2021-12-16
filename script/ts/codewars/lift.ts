@@ -1,5 +1,7 @@
 type TDirection = 'up' | 'down';
 
+enum Direction {UP = 1, DOWN = -1}
+
 type TLiftOnTheFloor = Pick<Lift,
     'direction'
     | 'freeSpace'
@@ -7,6 +9,7 @@ type TLiftOnTheFloor = Pick<Lift,
     | 'letOutPersons'
     | 'selectDirection'
     | 'clearQueue'
+    | 'changeDirection'
     | 'wait'
     >;
 
@@ -59,8 +62,11 @@ class Floor {
     }
 
     public setLiftOnTheFloor(lift: TLiftOnTheFloor): void {
-        lift.letOutPersons();
-        lift.selectDirection();
+        if (this.isPressed) {
+
+        } else {
+            lift.changeDirection();
+        }
 
         if (lift.direction === 'up') {
             if (this._queueUp.length) {
@@ -182,10 +188,13 @@ class Lift implements TLiftOnTheFloor {
 
     public open(): void {
         this._log.push(this._currentFloor);
+
+        this.clearQueue();
+        this.letOutPersons();
     }
 
-    public clearQueue(direction: TDirection): void {
-        if (direction === 'up') {
+    public clearQueue(): void {
+        if (this.direction === 'up') {
             this._queueUp.delete(this._currentFloor);
         } else {
             this._queueDown.delete(this._currentFloor);
@@ -225,6 +234,10 @@ class Lift implements TLiftOnTheFloor {
         if (this.needToChangeDirection) {
             this._direction = (this._direction === 'up') ? 'down' : 'up';
         }
+    }
+
+    public changeDirection(): boolean {
+        return false;
     }
 
 }
