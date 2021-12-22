@@ -166,6 +166,14 @@ class Lift implements TLiftOnTheFloor {
         }
     }
 
+    public up(): void {
+        this._currentFloor++;
+    }
+
+    public down(): void {
+        this._currentFloor--;
+    }
+
 
     public next(): boolean {
         if (--this._iterationCount <= 0) {
@@ -240,15 +248,20 @@ class Lift implements TLiftOnTheFloor {
         return false;
     }
 
+    public error(): never {
+        throw new Error('The lift is broken');
+    }
 }
 
 class Building {
     private _floors: Floor[];
     private _lift: Lift;
+    protected _cpu: CPU;
 
     constructor(floorCount: number, liftCapacity: number) {
         this._floors = (new Array(floorCount)).fill(0).map((nothing: unknown, index: number) => new Floor(index));
         this._lift = new Lift(liftCapacity);
+        this._cpu = new CPU(this._lift, floorCount, 0);
     }
 
     public get liftLog(): number[] {
@@ -281,6 +294,104 @@ class Building {
         this._lift.open();
         this._floors[this._lift.currentFloor].setLiftOnTheFloor(this._lift);
     }
+}
+
+class CPU {
+
+    protected _floorCount: number;
+    protected _firstFloorNumber: number;
+    protected _lift: Lift;
+    protected _queue: Record<Direction, Set<number>>;
+
+    protected _direction: Direction = Direction.UP;
+
+    private _iterationCount = 1e6;
+
+    constructor(lift: Lift, floorCount: number, firstFloorNumber: number) {
+        this._lift = lift;
+        this._floorCount = floorCount;
+        this._firstFloorNumber = firstFloorNumber;
+        this._queue = {
+            [Direction.DOWN]: new Set(),
+            [Direction.UP]: new Set(),
+        };
+    }
+
+    public get needToStop(): boolean {
+        return this._queue[this._direction].has(this._lift.currentFloor);
+    }
+
+    private get needToChangeDirection(): boolean {
+        const queueUp: Set<number> = this._queue[Direction.UP];
+        const queueDown: Set<number> = this._queue[Direction.DOWN];
+
+        if (this._direction === Direction.UP) {
+            if (queueUp.size && this._lift.currentFloor <= Math.max(...queueUp.keys())) { return false; }
+
+            if (queueDown.size && this._lift.currentFloor < Math.max(...queueDown.keys())) { return false; }
+
+            return true;
+        } else {
+            if (queueDown.size && this._lift.currentFloor >= Math.min(...queueDown.keys())) { return false; }
+
+            if (queueUp.size && this._lift.currentFloor > Math.min(...queueUp.keys())) { return false; }
+
+            return true;
+        }
+    }
+
+    public pressFloorButton(floor: number, direction: Direction) {
+        this._queue[direction].add(floor);
+    }
+
+    public pressLiftButton(floor: number): void {
+        if (floor === this._lift.currentFloor) { return; }
+
+        const direction: Direction = (floor > this._lift.currentFloor) ? Direction.UP : Direction.DOWN;
+        this._queue[direction].add(floor);
+    }
+
+    public next(): boolean {
+        this.clearQueue();
+
+        while (true) {
+            if (--this._iterationCount <= 0) {
+                this._lift.error();
+            }
+
+            if (!this._queue[Direction.DOWN].size && !this._queue[Direction.UP].size) {
+                if (this._lift.currentFloor >= this._firstFloorNumber) {
+                    this._queue[Direction.DOWN].add(this._firstFloorNumber);
+                    this._direction = Direction.DOWN;
+                } else {
+                    return false;
+                }
+            }
+
+            if (this._direction === Direction.UP) {
+                if (this._lift.currentFloor >= (this._floorCount - this._firstFloorNumber)) {
+                    this._lift.open();
+                    this._lift.error();
+                }
+                this._lift.up();
+            } else if (this._direction === Direction.DOWN) {
+                if (this._lift.currentFloor <= this._firstFloorNumber) {
+                    this._lift.open();
+                    this._lift.error();
+                }
+                this._lift.down();
+            }
+
+            if (this.needToStop) { return true; }
+        }
+    }
+
+    protected clearQueue(): void {
+        this._queue[this._direction].delete(this._lift.currentFloor);
+    }
+
+
+
 }
 
 
