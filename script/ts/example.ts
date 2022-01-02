@@ -1071,3 +1071,85 @@ let log = (obj: any = '') => console.log(obj);
         }
     }
 }
+
+type TRules = IRules | IRule;
+interface ISomeObject {
+    Rules: TRules;
+}
+
+interface IRules {
+    condition: 'OR' | 'AND';
+    rules: TRules[];
+}
+
+interface IRule {
+    filed: string;
+    id: string;
+    input: string;
+    operator: string;
+    type: string;
+    value: string;
+}
+
+const someObj: ISomeObject = {
+    Rules: {
+        condition: 'OR',
+        rules: [{
+            filed: 'RegistrationDate',
+            id: 'RegistrationDate',
+            input: 'text',
+            operator: 'less',
+            type: 'date',
+            value: '2017-07-31'
+        },
+        {
+            condition: 'AND',
+            rules: [{
+                filed: 'RegistrationDate',
+                id: 'RegistrationDate',
+                input: 'text',
+                operator: 'less',
+                type: 'date',
+                value: '2017-07-31'
+            },
+            {
+                filed: 'RegistrationDate',
+                id: 'RegistrationDate',
+                input: 'text',
+                operator: 'less',
+                type: 'date',
+                value: '2017-07-31'
+            }]
+        }]
+    }
+};
+
+const someObj2: ISomeObject = {
+    Rules: {
+        filed: 'RegistrationDate',
+        id: 'RegistrationDate',
+        input: 'text',
+        operator: 'less',
+        type: 'date',
+        value: '2017-07-31'
+    }
+};
+
+
+interface ISomeObject2 {
+    rules: IRules2 | IRule2;
+}
+
+interface IRules2 {
+    condition: 'OR' | 'AND';
+    items: IRules2 | IRule2;
+}
+
+interface IRule2 {
+    filed: string;
+    id: string;
+    input: string;
+    operator: string;
+    type: string;
+    value: string;
+}
