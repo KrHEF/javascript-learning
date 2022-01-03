@@ -4,63 +4,78 @@ var Direction;
     Direction[Direction["UP"] = 1] = "UP";
     Direction[Direction["DOWN"] = -1] = "DOWN";
 })(Direction || (Direction = {}));
-class Person {
-    constructor(floor, goTo) {
-        Object.defineProperty(this, "floor", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: floor
-        });
-        Object.defineProperty(this, "goTo", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: goTo
-        });
-        if (floor === goTo) {
-            throw new Error('This person go to hell');
+class Queue {
+    _queue = [];
+    get size() {
+        return this._queue.length;
+    }
+    get values() {
+        return [...this._queue];
+    }
+    lpush(value) {
+        if (!this.has(value)) {
+            this._queue.unshift(value);
         }
     }
+    rpush(value) {
+        if (!this.has(value)) {
+            this._queue.push(value);
+        }
+    }
+    lpop(count) {
+        if (typeof (count) !== 'number') {
+            return this._queue.shift() || null;
+        }
+        return this._queue.splice(0, count);
+    }
+    rpop(count) {
+        if (typeof (count) !== 'number') {
+            return this._queue.pop() || null;
+        }
+        return this._queue.splice(-count).reverse();
+    }
+    delete(value) {
+        const size = this.size;
+        this._queue = this._queue.filter((val) => val !== value);
+        return size !== this.size;
+    }
+    has(value) {
+        return this._queue.includes(value);
+    }
+}
+class Queues {
+    _queues = {
+        [Direction.DOWN]: new Queue(),
+        [Direction.UP]: new Queue(),
+    };
+    get(direction) {
+        return this._queues[direction];
+    }
+}
+class Person {
+    floor;
+    goTo;
+    constructor(floor, goTo) {
+        this.floor = floor;
+        this.goTo = goTo;
+    }
     get direction() {
+        if (this.goTo === this.floor) {
+            return 0;
+        }
         return (this.goTo > this.floor) ? Direction.UP : Direction.DOWN;
     }
 }
 class Floor {
+    number;
+    _queues = new Queues();
+    _pressButton;
     constructor(number, pressFloorButton) {
-        Object.defineProperty(this, "number", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_queue", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_pressButton", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
         this.number = number;
         this._pressButton = pressFloorButton;
-        this._queue = {
-            [Direction.DOWN]: [],
-            [Direction.UP]: [],
-        };
     }
     addPerson(person) {
-        if (person.goTo === this.number) {
-            return;
-        }
-        if (this._queue[person.direction].includes(person)) {
-            return;
-        }
-        this._queue[person.direction].push(person);
+        this._queues.get(person.direction).rpush(person);
         this._pressButton(person.floor, person.direction);
     }
     openDoors() {
@@ -70,43 +85,22 @@ class Floor {
         return true;
     }
     letIn(direction, freeSpace) {
-        const personsToLift = this._queue[direction].splice(0, freeSpace);
-        this._queue[direction].some((person) => {
-            this._pressButton(person.floor, person.direction);
-            return true;
-        });
-        return personsToLift;
+        const result = this._queues.get(direction).lpop(freeSpace);
+        if (this._queues.get(direction).size) {
+            this._pressButton(this.number, direction);
+        }
+        return result;
     }
     letOut(persons) {
         return;
     }
 }
 class Lift {
+    _capacity;
+    _persons = new Set();
+    _personsGoTo = new Map();
+    _pressLiftButton;
     constructor(capacity, pressLiftButton) {
-        Object.defineProperty(this, "_capacity", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_persons", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Set()
-        });
-        Object.defineProperty(this, "_personsGoTo", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Map()
-        });
-        Object.defineProperty(this, "_pressLiftButton", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
         this._capacity = capacity;
         this._pressLiftButton = pressLiftButton;
     }
@@ -141,31 +135,11 @@ class Lift {
     }
 }
 class Building {
+    _cpu;
+    _floors;
+    _lift;
+    _log = [];
     constructor(floorCount, liftCapacity) {
-        Object.defineProperty(this, "_cpu", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_floors", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_lift", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_log", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: []
-        });
         this._cpu = new LiftController(floorCount);
         this._lift = new Lift(liftCapacity, (floor, direction) => {
             this._cpu.pressLiftButton(floor, direction);
@@ -185,7 +159,9 @@ class Building {
             const floor = this._floors[floorNumber];
             queue.forEach((goTo) => {
                 const person = new Person(floorNumber, goTo);
-                floor.addPerson(person);
+                if (person.direction) {
+                    floor.addPerson(person);
+                }
             });
         });
     }
@@ -210,48 +186,14 @@ class Building {
     }
 }
 class LiftController {
+    _firstFloorNumber = 0;
+    _floorCount;
+    _currentFloor = 0;
+    _direction = Direction.UP;
+    _queues = new Queues();
+    _iterationCount = 1e6;
     constructor(floorCount) {
-        Object.defineProperty(this, "_floorCount", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_firstFloorNumber", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: 0
-        });
-        Object.defineProperty(this, "_currentFloor", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: 0
-        });
-        Object.defineProperty(this, "_direction", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: Direction.UP
-        });
-        Object.defineProperty(this, "_queue", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_iterationCount", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: 1e6
-        });
         this._floorCount = floorCount;
-        this._queue = {
-            [Direction.DOWN]: new Set(),
-            [Direction.UP]: new Set(),
-        };
     }
     get currentFloor() {
         return this._currentFloor;
@@ -260,38 +202,44 @@ class LiftController {
         return this._direction;
     }
     get needToStop() {
-        return this._queue[this._direction].has(this._currentFloor);
+        return this._queue.has(this._currentFloor);
     }
     get needToChangeDirection() {
-        const queueUp = this._queue[Direction.UP];
-        const queueDown = this._queue[Direction.DOWN];
         if (this._direction === Direction.UP) {
-            if (queueUp.size && this._currentFloor <= Math.max(...queueUp.keys())) {
+            if (this._queueUp.size && this._currentFloor <= Math.max(...this._queueUp.values)) {
                 return false;
             }
-            if (queueDown.size && this._currentFloor < Math.max(...queueDown.keys())) {
+            if (this._queueDown.size && this._currentFloor < Math.max(...this._queueDown.values)) {
                 return false;
             }
-            return true;
         }
         else {
-            if (queueDown.size && this._currentFloor >= Math.min(...queueDown.keys())) {
+            if (this._queueDown.size && this._currentFloor >= Math.min(...this._queueDown.values)) {
                 return false;
             }
-            if (queueUp.size && this._currentFloor > Math.min(...queueUp.keys())) {
+            if (this._queueUp.size && this._currentFloor > Math.min(...this._queueUp.values)) {
                 return false;
             }
-            return true;
         }
+        return true;
+    }
+    get _queue() {
+        return this._queues.get(this._direction);
+    }
+    get _queueUp() {
+        return this._queues.get(Direction.UP);
+    }
+    get _queueDown() {
+        return this._queues.get(Direction.DOWN);
     }
     pressFloorButton(floor, direction) {
-        this._queue[direction].add(floor);
+        this._queues.get(direction).rpush(floor);
     }
     pressLiftButton(floor, direction) {
         if (floor === this._currentFloor) {
             return;
         }
-        this._queue[direction].add(floor);
+        this._queues.get(direction).rpush(floor);
     }
     changeDirection() {
         this._direction *= -1;
@@ -299,29 +247,20 @@ class LiftController {
     }
     next() {
         while (true) {
-            if (--this._iterationCount <= 0) {
-                this.error();
-            }
-            if (!this._queue[Direction.DOWN].size && !this._queue[Direction.UP].size) {
+            if (!this._queueDown.size && !this._queueUp.size) {
                 if (this._currentFloor > this._firstFloorNumber) {
-                    this._queue[Direction.DOWN].add(this._firstFloorNumber);
                     this._direction = Direction.DOWN;
+                    this._queue.rpush(this._firstFloorNumber);
                 }
                 else {
                     return false;
                 }
             }
-            if (this._direction === Direction.UP) {
-                if (this._currentFloor >= (this._floorCount - this._firstFloorNumber)) {
-                    this.error();
-                }
-                this._currentFloor++;
-            }
-            else {
-                if (this._currentFloor <= this._firstFloorNumber) {
-                    this.error();
-                }
-                this._currentFloor--;
+            this._currentFloor += this._direction;
+            if ((this._currentFloor >= (this._floorCount - this._firstFloorNumber))
+                || (this._currentFloor < this._firstFloorNumber)
+                || --this._iterationCount <= 0) {
+                this.error();
             }
             if (this.needToStop) {
                 this.clearQueue();
@@ -338,7 +277,7 @@ class LiftController {
         throw new Error('The lift is broken');
     }
     clearQueue() {
-        this._queue[this._direction].delete(this._currentFloor);
+        this._queue.delete(this._currentFloor);
     }
 }
 const theLift = (queues, capacity) => {
@@ -412,4 +351,73 @@ it("down and down", function () {
     console.log(result, [0, 5, 4, 3, 2, 1, 0]);
     return result.join('') === [0, 5, 4, 3, 2, 1, 0].join('');
 });
+const UP = 1;
+const DOWN = 0;
+const myAnswer = (queues, capacity, result = [0], direction = UP) => {
+    let peopleInLift = [];
+    queues.map((queue, floor) => {
+        floor = direction == DOWN ? queues.length - floor - 1 : floor;
+        queue = queues[floor];
+        let stoppedAtFloor = false;
+        peopleInLift.reduceRight((acc, person, index, object) => {
+            if (person === floor) {
+                object.splice(index, 1);
+                stoppedAtFloor = true;
+            }
+        }, []);
+        let count = 0;
+        queues[floor] = queue.filter((person, index) => {
+            if (((person > floor) && direction) ||
+                ((person < floor) && !direction)) {
+                stoppedAtFloor = true;
+                if (capacity > peopleInLift.length) {
+                    count++;
+                    peopleInLift.push(person);
+                    return false;
+                }
+            }
+            return true;
+        });
+        if (stoppedAtFloor && floor !== result.slice(-1)[0]) {
+            result.push(floor);
+        }
+    });
+    if (direction === UP || peopleInLift.length || queues.filter(q => q.length).length) {
+        direction = direction === UP ? DOWN : UP;
+        return theLift(queues, capacity, result, direction);
+    }
+    if (result.slice(-1)[0] !== 0) {
+        result.push(0);
+    }
+    return result;
+};
+for (var r = 0; r < 20; r++) {
+    var people = 0;
+    var liftMax = 1 + Math.floor(Math.random() * 5);
+    var floors = 2 + Math.floor(Math.random() * 20);
+    var queues1 = [];
+    var queues2 = [];
+    for (var floor = 0; floor < floors; floor++) {
+        var qlen = Math.floor(Math.random() * 5);
+        var q1 = [];
+        var q2 = [];
+        for (var i = 0; i < qlen;) {
+            var wantFloor = Math.floor(Math.random() * floors);
+            if (wantFloor == floor)
+                continue;
+            q1.push(wantFloor);
+            q2.push(wantFloor);
+            i++;
+        }
+        queues1.push(q1);
+        queues2.push(q2);
+        people += qlen;
+    }
+    it(`R#${r}: ${floors} floors, ${people} people, lift holds ${liftMax}`, function () {
+        var expected = myAnswer(queues1, liftMax);
+        var userResult = theLift(queues2, liftMax);
+        console.log(userResult, expected);
+        return userResult.join('') === expected.join('');
+    });
+}
 //# sourceMappingURL=lift.js.map

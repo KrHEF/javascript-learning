@@ -120,30 +120,16 @@ let log = (obj = '') => console.log(obj);
     }
     {
         class Fish {
-            constructor() {
-                Object.defineProperty(this, "fly", {
-                    enumerable: true,
-                    configurable: true,
-                    writable: true,
-                    value: 0
-                });
-            }
             swim() {
             }
             ;
+            fly = 0;
         }
         class Bird {
-            constructor() {
-                Object.defineProperty(this, "swim", {
-                    enumerable: true,
-                    configurable: true,
-                    writable: true,
-                    value: ""
-                });
-            }
             fly() {
             }
             ;
+            swim = "";
         }
         let pet = (Math.random() > 0.5) ? new Bird() : new Fish();
         if ("fly" in pet && typeof (pet.fly) == 'function')
@@ -160,7 +146,7 @@ let log = (obj = '') => console.log(obj);
     }
     {
         function func3(param) {
-            return param !== null && param !== void 0 ? param : "default";
+            return param ?? "default";
         }
     }
     {
@@ -215,13 +201,8 @@ let log = (obj = '') => console.log(obj);
     }
     {
         class Clock {
+            currentTime = new Date;
             constructor(hour, minute) {
-                Object.defineProperty(this, "currentTime", {
-                    enumerable: true,
-                    configurable: true,
-                    writable: true,
-                    value: new Date
-                });
             }
             setTime(date) {
                 this.currentTime = date;
@@ -236,14 +217,7 @@ let log = (obj = '') => console.log(obj);
     }
     {
         class Control {
-            constructor() {
-                Object.defineProperty(this, "state", {
-                    enumerable: true,
-                    configurable: true,
-                    writable: true,
-                    value: void 0
-                });
-            }
+            state;
         }
         class Button extends Control {
             select() { }
@@ -334,25 +308,11 @@ let log = (obj = '') => console.log(obj);
 {
     {
         class Animal {
+            name;
+            hasTail;
+            id;
+            static ids = 0;
             constructor(name, hasTail = false) {
-                Object.defineProperty(this, "name", {
-                    enumerable: true,
-                    configurable: true,
-                    writable: true,
-                    value: void 0
-                });
-                Object.defineProperty(this, "hasTail", {
-                    enumerable: true,
-                    configurable: true,
-                    writable: true,
-                    value: void 0
-                });
-                Object.defineProperty(this, "id", {
-                    enumerable: true,
-                    configurable: true,
-                    writable: true,
-                    value: void 0
-                });
                 this.name = name;
                 this.hasTail = hasTail;
                 this.id = ++Animal.ids;
@@ -361,12 +321,6 @@ let log = (obj = '') => console.log(obj);
                 log(`${this.name} moved ${distanceInMeters} m.`);
             }
         }
-        Object.defineProperty(Animal, "ids", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: 0
-        });
         class Dog extends Animal {
             constructor(name) {
                 super(name, true);
@@ -379,19 +333,11 @@ let log = (obj = '') => console.log(obj);
     }
     {
         class Animal {
+            name;
+            hasTail;
             constructor(name, hasTail = false) {
-                Object.defineProperty(this, "name", {
-                    enumerable: true,
-                    configurable: true,
-                    writable: true,
-                    value: name
-                });
-                Object.defineProperty(this, "hasTail", {
-                    enumerable: true,
-                    configurable: true,
-                    writable: true,
-                    value: hasTail
-                });
+                this.name = name;
+                this.hasTail = hasTail;
             }
             get Name() { return this.name; }
             set HasTail(value) { this.hasTail = value; }
@@ -400,19 +346,9 @@ let log = (obj = '') => console.log(obj);
     }
     {
         class Animal {
+            name;
+            hasTail;
             constructor(name, hasTail = false) {
-                Object.defineProperty(this, "name", {
-                    enumerable: true,
-                    configurable: true,
-                    writable: true,
-                    value: void 0
-                });
-                Object.defineProperty(this, "hasTail", {
-                    enumerable: true,
-                    configurable: true,
-                    writable: true,
-                    value: void 0
-                });
                 this.name = name;
                 this.hasTail = hasTail;
             }
@@ -432,20 +368,8 @@ let log = (obj = '') => console.log(obj);
     }
     {
         class Point {
-            constructor() {
-                Object.defineProperty(this, "x", {
-                    enumerable: true,
-                    configurable: true,
-                    writable: true,
-                    value: 0
-                });
-                Object.defineProperty(this, "y", {
-                    enumerable: true,
-                    configurable: true,
-                    writable: true,
-                    value: 0
-                });
-            }
+            x = 0;
+            y = 0;
         }
         let point3d = { x: 1, y: 2, z: 3 };
     }
@@ -509,25 +433,10 @@ let log = (obj = '') => console.log(obj);
     }
     {
         class C {
+            a;
+            b = 2;
+            c = false;
             constructor() {
-                Object.defineProperty(this, "a", {
-                    enumerable: true,
-                    configurable: true,
-                    writable: true,
-                    value: void 0
-                });
-                Object.defineProperty(this, "b", {
-                    enumerable: true,
-                    configurable: true,
-                    writable: true,
-                    value: 2
-                });
-                Object.defineProperty(this, "c", {
-                    enumerable: true,
-                    configurable: true,
-                    writable: true,
-                    value: false
-                });
                 this.a = '1';
             }
         }
@@ -536,14 +445,7 @@ let log = (obj = '') => console.log(obj);
     }
     {
         class C {
-            constructor() {
-                Object.defineProperty(this, "name", {
-                    enumerable: true,
-                    configurable: true,
-                    writable: true,
-                    value: 'Boris'
-                });
-            }
+            name = 'Boris';
         }
         function showName() {
         }
@@ -568,14 +470,7 @@ let log = (obj = '') => console.log(obj);
             };
         }
         let Test = class Test {
-            constructor() {
-                Object.defineProperty(this, "a", {
-                    enumerable: true,
-                    configurable: true,
-                    writable: true,
-                    value: 0
-                });
-            }
+            a = 0;
         };
         Test = __decorate([
             color('green')
@@ -596,13 +491,9 @@ let log = (obj = '') => console.log(obj);
             };
         }
         let C = class C {
+            static Sum;
+            x;
             constructor(x) {
-                Object.defineProperty(this, "x", {
-                    enumerable: true,
-                    configurable: true,
-                    writable: true,
-                    value: void 0
-                });
                 this.x = x;
             }
             show() {
@@ -639,7 +530,7 @@ let log = (obj = '') => console.log(obj);
     }
     let defaultObj = { type: 'Employee' };
     function getUser(type) {
-        let obj = Object.assign({}, defaultObj);
+        let obj = { ...defaultObj };
         obj.branch = 'Pskov';
         return (type === 'Manager') ? obj : defaultObj;
     }
@@ -693,19 +584,11 @@ let log = (obj = '') => console.log(obj);
     }
     let counter = makeCounter();
     class People {
+        _firstName;
+        _lastName;
         constructor(_firstName, _lastName) {
-            Object.defineProperty(this, "_firstName", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: _firstName
-            });
-            Object.defineProperty(this, "_lastName", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: _lastName
-            });
+            this._firstName = _firstName;
+            this._lastName = _lastName;
         }
         get firstName() {
             return this._firstName;
@@ -721,20 +604,12 @@ let log = (obj = '') => console.log(obj);
         }
     }
     class User extends People {
+        _country;
+        _city;
         constructor(_firstName, _lastName, _country, _city) {
             super(_firstName, _lastName);
-            Object.defineProperty(this, "_country", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: _country
-            });
-            Object.defineProperty(this, "_city", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: _city
-            });
+            this._country = _country;
+            this._city = _city;
         }
         get country() {
             return this._country;
@@ -750,14 +625,10 @@ let log = (obj = '') => console.log(obj);
         }
     }
     class Employee extends People {
+        _branch;
         constructor(_firstName, _lastName, _branch) {
             super(_firstName, _lastName);
-            Object.defineProperty(this, "_branch", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: _branch
-            });
+            this._branch = _branch;
         }
         get branch() {
             return this._branch;
