@@ -1,11 +1,11 @@
 {
     "compilerOptions": {
-      "module": "ESNext",
+      "module": "CommonJS",
       "outDir": "script/js",
       "removeComments": true,
       "sourceMap": true,
       "strict": true,
-      "target": "ESNext",
+      "target": "ES2016",
       "experimentalDecorators": true,
       // "noUnusedLocals": true,
       "useDefineForClassFields": true,
