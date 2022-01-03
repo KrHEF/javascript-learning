@@ -23,7 +23,7 @@ if (1) {
         func: () => document.body.firstElementChild,
     });
     addFunctionMeta({ title: "Проверка на дочерний узел",
-        func: () => { var _a; return (_a = document.body.firstElementChild) === null || _a === void 0 ? void 0 : _a.hasChildNodes(); },
+        func: () => document.body.firstElementChild?.hasChildNodes(),
     });
     addFunctionMeta({ title: "Сосед справа",
         func: () => document.head.nextElementSibling,
@@ -43,10 +43,10 @@ if (1) {
         func: () => document.querySelector("html *"),
     });
     addFunctionMeta({ title: "Проверка на удовлетворению css селекторам",
-        func: () => { var _a; return (_a = document.body.firstElementChild) === null || _a === void 0 ? void 0 : _a.matches("#code-wrapper"); },
+        func: () => document.body.firstElementChild?.matches("#code-wrapper"),
     });
     addFunctionMeta({ title: "Ближайший родитель, который соответсвует css селекторам (если нет, то просто ближайший)",
-        func: () => { var _a; return (_a = document.getElementById("code-wrapper")) === null || _a === void 0 ? void 0 : _a.closest("body"); },
+        func: () => document.getElementById("code-wrapper")?.closest("body"),
     });
     addFunctionMeta({ title: "Возвращает коллекцию элементов по тегу",
         warning: "Возвращает динамическую коллекцию (коллекцию указателей): document.getElementsByTagName('tag or *')",
@@ -66,13 +66,13 @@ if (0) {
     let codeWrapper = document.getElementById("code-wrapper");
     addFunctionMeta({ title: "nodeType",
         warning: "Depricated",
-        func: () => codeWrapper === null || codeWrapper === void 0 ? void 0 : codeWrapper.nodeType,
+        func: () => codeWrapper?.nodeType,
     });
     addFunctionMeta({ title: "nodeName",
-        func: () => { var _a; return (_a = codeWrapper === null || codeWrapper === void 0 ? void 0 : codeWrapper.nextSibling) === null || _a === void 0 ? void 0 : _a.nodeName; },
+        func: () => codeWrapper?.nextSibling?.nodeName,
     });
     addFunctionMeta({ title: "tagName",
-        func: () => codeWrapper === null || codeWrapper === void 0 ? void 0 : codeWrapper.tagName,
+        func: () => codeWrapper?.tagName,
     });
     addFunctionMeta({ title: "innerHtml",
         warning: "Есть только у элементов",
@@ -81,7 +81,7 @@ if (0) {
     addFunctionMeta({ title: "outerHtml",
         warning: "Не меняет элемент!",
         func: () => {
-            let bb = codeWrapper === null || codeWrapper === void 0 ? void 0 : codeWrapper.getElementsByTagName("b");
+            let bb = codeWrapper?.getElementsByTagName("b");
             if (bb && bb.length) {
                 bb[0].outerHTML = "<i>" + bb[0].textContent + "</i>";
                 return bb[0];
@@ -90,61 +90,58 @@ if (0) {
         },
     });
     addFunctionMeta({ title: "nodeValue",
-        func: () => { var _a, _b; return (_b = (_a = codeWrapper === null || codeWrapper === void 0 ? void 0 : codeWrapper.previousSibling) === null || _a === void 0 ? void 0 : _a.previousSibling) === null || _b === void 0 ? void 0 : _b.nodeValue; },
+        func: () => codeWrapper?.previousSibling?.previousSibling?.nodeValue,
     });
     addFunctionMeta({ title: "data",
         warning: "Почти тоже самое, что nodeValue",
-        func: () => {
-            var _a;
-            return ((_a = codeWrapper === null || codeWrapper === void 0 ? void 0 : codeWrapper.previousSibling) === null || _a === void 0 ? void 0 : _a.previousSibling)
-                ? codeWrapper.previousSibling.previousSibling["data"]
-                : '';
-        },
+        func: () => (codeWrapper?.previousSibling?.previousSibling)
+            ? codeWrapper.previousSibling.previousSibling["data"]
+            : '',
     });
     addFunctionMeta({ title: "textContent",
-        func: () => codeWrapper === null || codeWrapper === void 0 ? void 0 : codeWrapper.textContent,
+        func: () => codeWrapper?.textContent,
     });
     addFunctionMeta({ title: "hidden",
-        func: () => setInterval(() => codeWrapper.hidden = !(codeWrapper === null || codeWrapper === void 0 ? void 0 : codeWrapper.hidden), 5e2),
+        func: () => setInterval(() => codeWrapper.hidden = !codeWrapper?.hidden, 5e2),
     });
 }
 if (0) {
     let codeWrapper = document.getElementById("code-wrapper");
     addFunctionMeta({ title: "attribute id as property elem.id",
-        func: () => codeWrapper === null || codeWrapper === void 0 ? void 0 : codeWrapper.id,
+        func: () => codeWrapper?.id,
     });
     addFunctionMeta({ title: "hasAttribute",
         warning: "Имена атрибутов регистронезависимые",
-        func: () => codeWrapper === null || codeWrapper === void 0 ? void 0 : codeWrapper.hasAttribute('name'),
+        func: () => codeWrapper?.hasAttribute('name'),
     });
     addFunctionMeta({ title: "setAttribute and attributes",
         warning: "attributes возвращает динамическую коллекцию, и т. к. дальше атрибут удаляется, то он отсутствует",
         func: () => {
-            codeWrapper === null || codeWrapper === void 0 ? void 0 : codeWrapper.setAttribute('myAttr', '123');
-            return codeWrapper === null || codeWrapper === void 0 ? void 0 : codeWrapper.attributes;
+            codeWrapper?.setAttribute('myAttr', '123');
+            return codeWrapper?.attributes;
         },
     });
     addFunctionMeta({ title: "removeAttribute and getAttribute",
         func: () => {
-            codeWrapper === null || codeWrapper === void 0 ? void 0 : codeWrapper.removeAttribute('myAttr');
-            return codeWrapper === null || codeWrapper === void 0 ? void 0 : codeWrapper.getAttribute('myAttr');
+            codeWrapper?.removeAttribute('myAttr');
+            return codeWrapper?.getAttribute('myAttr');
         },
     });
     addFunctionMeta({ title: "Атрибут style - строка, свойство style - объект",
         func: () => {
-            codeWrapper === null || codeWrapper === void 0 ? void 0 : codeWrapper.setAttribute('style', 'color: red');
-            return `Атрибут style - ${typeof (codeWrapper === null || codeWrapper === void 0 ? void 0 : codeWrapper.getAttribute("style"))}, свойство style - ${typeof (codeWrapper === null || codeWrapper === void 0 ? void 0 : codeWrapper.style)}`;
+            codeWrapper?.setAttribute('style', 'color: red');
+            return `Атрибут style - ${typeof codeWrapper?.getAttribute("style")}, свойство style - ${typeof codeWrapper?.style}`;
         },
     });
     addFunctionMeta({ title: "data- атрибуты доступны через свойство dataset",
         warning: "Атрибуты, состоящие из нескольких слов становятся свойствами, записанными с помощью верблюжьей нотации:",
         func: () => {
-            codeWrapper === null || codeWrapper === void 0 ? void 0 : codeWrapper.setAttribute('data-my-attr', '123');
-            return codeWrapper === null || codeWrapper === void 0 ? void 0 : codeWrapper.dataset.myAttr;
+            codeWrapper?.setAttribute('data-my-attr', '123');
+            return codeWrapper?.dataset.myAttr;
         },
     });
     addFunctionMeta({ title: "outerHtml выводит все установленные атрибуты элемента",
-        func: () => codeWrapper === null || codeWrapper === void 0 ? void 0 : codeWrapper.outerHTML,
+        func: () => codeWrapper?.outerHTML,
     });
 }
 if (0) {
@@ -166,7 +163,7 @@ if (0) {
     addFunctionMeta({ title: "append - вставка элемента в родительский элемент с конца",
         warning: "Один элемент можно вставить всего 1 раз, затем он перемещаются",
         func: () => {
-            codeWrapper === null || codeWrapper === void 0 ? void 0 : codeWrapper.append(span);
+            codeWrapper?.append(span);
             span.append(text);
         },
     });
@@ -174,7 +171,7 @@ if (0) {
         func: () => {
             let div2 = document.createElement('div');
             div2.innerHTML = "My message:";
-            codeWrapper === null || codeWrapper === void 0 ? void 0 : codeWrapper.prepend(div2);
+            codeWrapper?.prepend(div2);
         },
     });
     addFunctionMeta({ title: "before - вставка элемента слева",
@@ -200,27 +197,27 @@ if (0) {
     });
     addFunctionMeta({ title: "insertAdjacentHTML - вставка html текста",
         warning: "beforebegin - вставка перед элементом, afterbegin - вставка в начало элемента, beforeend - вставка в конец элемента, afterend - вставка после элемента ",
-        func: () => codeWrapper === null || codeWrapper === void 0 ? void 0 : codeWrapper.insertAdjacentHTML("beforeend", "<p> Абзац </p>"),
+        func: () => codeWrapper?.insertAdjacentHTML("beforeend", "<p> Абзац </p>"),
     });
     addFunctionMeta({ title: "insertAdjacentText - вставка текста",
-        func: () => codeWrapper === null || codeWrapper === void 0 ? void 0 : codeWrapper.insertAdjacentText("beforeend", "<p> Вставка текста.</p>"),
+        func: () => codeWrapper?.insertAdjacentText("beforeend", "<p> Вставка текста.</p>"),
     });
     addFunctionMeta({ title: "insertAdjacentElement - вставка элемента",
         func: () => {
             let divElem = document.createElement('div');
             divElem.innerHTML = 'Другой текст';
-            codeWrapper === null || codeWrapper === void 0 ? void 0 : codeWrapper.insertAdjacentElement("afterbegin", divElem);
+            codeWrapper?.insertAdjacentElement("afterbegin", divElem);
         },
     });
     addFunctionMeta({ title: "cloneNode - клонирование элемента",
         func: () => {
-            codeWrapperClone = codeWrapper === null || codeWrapper === void 0 ? void 0 : codeWrapper.cloneNode(false);
+            codeWrapperClone = codeWrapper?.cloneNode(false);
             return codeWrapperClone;
         },
     });
     addFunctionMeta({ title: "remove - удаление из DOM",
         warning: "Элемент удаляется только из DOM, если была ссылка на него, то он остается в памяти",
-        func: () => codeWrapper === null || codeWrapper === void 0 ? void 0 : codeWrapper.remove(),
+        func: () => codeWrapper?.remove(),
     });
     addFunctionMeta({ title: "DocumentFragment - обертка, которая удаляется при вставке, т. е. не имеет тега, а используется как контейнер",
         func: () => {
@@ -242,8 +239,8 @@ if (0) {
     addFunctionMeta({ title: "Специальный объект с методами доступа к классам elem.classList",
         warning: "Доступные методы: add, remove, toggle, contains",
         func: () => {
-            codeWrapper === null || codeWrapper === void 0 ? void 0 : codeWrapper.classList.add("ef");
-            return codeWrapper === null || codeWrapper === void 0 ? void 0 : codeWrapper.classList.contains("ef");
+            codeWrapper?.classList.add("ef");
+            return codeWrapper?.classList.contains("ef");
         },
     });
     addFunctionMeta({ title: "Задание стиля элемента через объект elem.style",
@@ -251,13 +248,13 @@ if (0) {
         func: () => {
             codeWrapper.style.backgroundColor = "red";
             codeWrapper.style.height = "1vh";
-            return codeWrapper === null || codeWrapper === void 0 ? void 0 : codeWrapper.style;
+            return codeWrapper?.style;
         },
     });
     addFunctionMeta({ title: "Очистка стиля через elem.style.prop = \"\"",
         func: () => {
             codeWrapper.style.backgroundColor = "";
-            return codeWrapper === null || codeWrapper === void 0 ? void 0 : codeWrapper.style;
+            return codeWrapper?.style;
         },
     });
     addFunctionMeta({ title: "Задание нескольких стилей строкой через elem.style.cssText",
@@ -293,7 +290,7 @@ function addFunctionMeta(funcMeta) {
         if (result instanceof EventTarget) {
             console.dir(result);
         }
-        else if ((result === null || result === void 0 ? void 0 : result.length) && result[0] instanceof EventTarget) {
+        else if (result?.length && result[0] instanceof EventTarget) {
             console.dir(result);
         }
         else {
