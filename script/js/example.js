@@ -220,7 +220,8 @@ let log = (obj = '') => console.log(obj);
             state;
         }
         class Button extends Control {
-            select() { }
+            select() {
+            }
         }
         class TextBox extends Control {
         }
@@ -638,4 +639,3 @@ let log = (obj = '') => console.log(obj);
         }
     }
 }
-//# sourceMappingURL=example.js.map

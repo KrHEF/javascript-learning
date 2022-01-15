@@ -18,4 +18,3 @@ async function waitPromise() {
         throw 'error2';
     });
 }
-//# sourceMappingURL=promise.js.map

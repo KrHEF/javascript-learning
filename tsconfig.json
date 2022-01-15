@@ -3,7 +3,7 @@
       "module": "CommonJS",
       "outDir": "script/js",
       "removeComments": true,
-      "sourceMap": true,
+      "sourceMap":false,
       "strict": true,
       "target": "ESNext",
       "experimentalDecorators": true,

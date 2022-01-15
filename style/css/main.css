@@ -1,3 +1,32 @@
+html {
+    font-size: 10px;
+}
+
 body {
     background-color: #faebd7;
+    font-size: 1.4rem;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+body.test-php {
+    display: flex;
+    gap: 1rem;
+    flex-direction: column;
+    height: 100vh;
+    padding: 1rem;
+}
+
+.test-php-form {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.test-php-form__link {
+    flex: auto;
+}
+
+.test-php-response {
+    height: 100%;
 }

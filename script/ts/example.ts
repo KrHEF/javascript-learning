@@ -393,7 +393,8 @@ let log = (obj: any = '') => console.log(obj);
         }
 
         class Button extends Control implements SelectableControl {
-            select() {}
+            select() {
+            }
         }
 
         class TextBox extends Control {

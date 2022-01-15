@@ -351,4 +351,3 @@ it("down and down", function () {
     console.log(result, [0, 5, 4, 3, 2, 1, 0]);
     return result.join('') === [0, 5, 4, 3, 2, 1, 0].join('');
 });
-//# sourceMappingURL=lift.js.map

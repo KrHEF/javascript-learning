@@ -73,4 +73,3 @@ function test3() {
 test1();
 test4();
 test5();
-//# sourceMappingURL=speedtest.js.map
