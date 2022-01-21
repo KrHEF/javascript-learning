@@ -393,7 +393,8 @@ let log = (obj: any = '') => console.log(obj);
         }
 
         class Button extends Control implements SelectableControl {
-            select() {}
+            select() {
+            }
         }
 
         class TextBox extends Control {
@@ -1047,7 +1048,7 @@ let log = (obj: any = '') => console.log(obj);
             return this.country + ' ' + this.address;
         }
 
-        public getInfo(): string {
+        public override getInfo(): string {
             return super.getInfo() + ` Address: ${this.address}`;
         }
 
@@ -1066,7 +1067,7 @@ let log = (obj: any = '') => console.log(obj);
             return this._branch;
         }
 
-        public getInfo(): string {
+        public override getInfo(): string {
             return super.getInfo() + ` Branch: ${this.branch} department`;
         }
     }
