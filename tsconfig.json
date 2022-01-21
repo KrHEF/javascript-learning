@@ -1,11 +1,14 @@
 {
     "compilerOptions": {
-      "module": "commonjs",
+      "module": "CommonJS",
       "outDir": "script/js",
       "removeComments": true,
       "sourceMap": true,
       "strict": true,
       "target": "ESNext",
-      "experimentalDecorators": true
+      "experimentalDecorators": true,
+      // "noUnusedLocals": true,
+      "useDefineForClassFields": true,
+      "strictNullChecks": false,
     }
   }
