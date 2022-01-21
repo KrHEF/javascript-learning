@@ -694,20 +694,20 @@ namespace ElevatorSaga {
 
         // LogService.add(`Elevator #${this._index}: changed status on '${ElevatorStatus[status]}'.`);
 
-        protected setDirection(direction: Direction): void {
-            switch (direction) {
-                case Direction.up:
-                    LogService.add(`Elevator #${this._index} set direction to UP`);
-                    // this._elevatorSaga.goingUpIndicator(true);
-                    // this._elevatorSaga.goingDownIndicator(false);
-                    break;
+        // protected setDirection(direction: Direction): void {
+            // switch (direction) {
+            //     case Direction.up:
+            //         LogService.add(`Elevator #${this._index} set direction to UP`);
+            //         // this._elevatorSaga.goingUpIndicator(true);
+            //         // this._elevatorSaga.goingDownIndicator(false);
+            //         break;
 
-                case Direction.down:
-                    LogService.add(`Elevator #${this._index} set direction to DOWN`);
-                    // this._elevatorSaga.goingUpIndicator(false);
-                    // this._elevatorSaga.goingDownIndicator(true);
-                    break;
-            }
+            //     case Direction.down:
+            //         LogService.add(`Elevator #${this._index} set direction to DOWN`);
+            //         // this._elevatorSaga.goingUpIndicator(false);
+            //         // this._elevatorSaga.goingDownIndicator(true);
+            //         break;
+            // }
         //     if (this._direction === value) { return; }
 
         //     LogService.add(`Elevator #${this._index}: set direction on '${Direction[value]}'.`);
@@ -724,7 +724,7 @@ namespace ElevatorSaga {
         //             this._elevatorSaga.goingUpIndicator(false);
         //             break;
         //     }
-        }
+        // }
 
         protected changeDirection(): void {
             // this.setDirection(this.direction * -1);
