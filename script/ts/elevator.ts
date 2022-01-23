@@ -203,6 +203,7 @@ namespace ElevatorSaga {
     interface ISetting {
         elevator: IElevatorSetting;
         statistics: IStatisticsSetting;
+        logs: ILogSetting;
     }
     interface IElevatorSetting {
         goToGroundFloorIfIdle: boolean;
@@ -211,6 +212,10 @@ namespace ElevatorSaga {
 
     interface IStatisticsSetting {
         depth: number;
+    }
+
+    interface ILogSetting {
+        showLogInConsole: boolean;
     }
 
     let timer: number = 0;
@@ -222,6 +227,9 @@ namespace ElevatorSaga {
         statistics: {
             depth: 50,
         },
+        logs: {
+            showLogInConsole: false,
+        }
     }
 
 
@@ -306,22 +314,6 @@ namespace ElevatorSaga {
             return this;
         }
 
-    }
-
-    class Queues<T> {
-
-        protected _queues: Record<Direction, Queue<T>> = {
-            [Direction.down]: new Queue(),
-            [Direction.up]: new Queue(),
-        };
-
-        public get isEmpty(): boolean {
-            return !this._queues[Direction.down].size && !this._queues[Direction.up].size;
-        }
-
-        public get(direction: Direction): Queue<T> {
-            return this._queues[direction];
-        }
     }
 
     class StaticsticsObject {
@@ -474,7 +466,11 @@ namespace ElevatorSaga {
 
         protected _log: string[] = [];
 
-        protected constructor() { }
+        protected constructor() {
+            if (settings.logs.showLogInConsole) {
+                console.log('log:', this);
+            }
+        }
 
         public static get log(): string[] {
             // return this._instance._log;
@@ -483,7 +479,9 @@ namespace ElevatorSaga {
 
         public static add(value: string) {
             this._instance._log.push(timer.toFixed(3) + ': ' + value);
-            console.log(timer.toFixed(3), value);
+            if (settings.logs.showLogInConsole) {
+                console.log(timer.toFixed(3), value);
+            }
         }
     }
 
@@ -767,6 +765,10 @@ namespace ElevatorSaga {
 
                 return elevator;
             });
+
+            if (settings.logs.showLogInConsole) {
+                console.log('controller:', this);
+            }
         }
 
         public queue(floorNum: number, direction: Direction): void {
@@ -823,9 +825,6 @@ namespace ElevatorSaga {
     return {
         init: (elevatorsSaga: ElevatorSaga.IElevator[], floors: ElevatorSaga.IFloor[]) => {
             controller = new ElevatorsController(elevatorsSaga);
-
-            console.log(controller);
-            console.log('Log', LogService.log);
 
             floors.forEach((floor) => {
                 floor.on('up_button_pressed', () => {
