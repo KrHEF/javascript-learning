@@ -854,59 +854,318 @@ let log = (obj: any = '') => console.log(obj);
 
 // Декораторы
 {
+    /**
+     * Декораторы бывают:
+     * - для класса
+     * - для метода
+     * - аксессоров
+     * - свойств
+     * - параметров
+     *
+     *
+     * Записть декораторов:
+     * @d1 @d2 obj => @d1(@d2(obj))
+     *
+     *
+     * Фабрика декораторов - специальная фнкция, которая возвращает декоратор
+     * @df1() obj
+     * , где df1 - ф-я, которая возвращает декоратор
+     *
+     */
+
+
     {
-        function color(value: string): Function {
-            return (target: any) => {
-                target['color'] = value;
+        const showLog = false;
+        /**
+         * Декоратор может вернуть новый класс.
+         */
+        function classDecorator(constructor: typeof A): typeof A | void {
+            if (showLog) {
+                console.log('constructor', constructor);
+            }
+            const A = class extends constructor {
+                protected override newField: string = 'new field';
+                private newField2: string = 'new field 2';
+
+                constructor(str: string) {
+                    super('new ' + str);
+                }
+            }
+            return A;
+        }
+
+        @classDecorator
+        class A {
+
+            public publicField: string = 'public field A';
+            protected protectedField: string;
+            protected newField: string = 'old field';
+
+            constructor(protectedField: string) {
+                this.protectedField = protectedField;
+            }
+
+            public publicMethod(): void {
+
+            }
+
+            protected protectedMethod(param: string): string {
+                return param;
+            }
+
+        }
+
+        class B extends A {
+            public override publicField: string = 'public field B';
+        }
+
+
+        const a = new A('protected field A');
+        const b = new B('protected field B')
+        if (showLog) {
+            console.log('ClassDecorator, new A() =>', a);
+            console.log('ClassDecorator, new B() =>', b);
+        }
+    } // Декораторы для классов
+
+    {
+        const showLog = false;
+
+        /**
+         * Декоратор может вернуть новые свойства метода.
+         */
+        function methodDecorator<T>(target: any, name: string, prop: TypedPropertyDescriptor<T>): void | TypedPropertyDescriptor<T> {
+            if (showLog) {
+                console.log('target', target);
+                console.log('name', name);
+                console.log('prop', prop);
+            }
+
+            return prop;
+        }
+
+
+        class A {
+
+            public publicField: string = 'public field';
+            protected protectedField: string;
+            protected newField: string;
+
+            constructor(protectedField: string) {
+                this.protectedField = protectedField;
+            }
+
+            @methodDecorator
+            public publicMethod(): void {
+
+            }
+
+            @methodDecorator
+            protected protectedMethod(param: string): string {
+                return param;
+            }
+
+        }
+
+        const a = new A('protected field');
+        if (showLog) {
+            console.log('a', a);
+        }
+        a.publicMethod();
+
+    } // Декоратор для методов (и аксессоров)
+
+    {
+        const showLog = false;
+        /**
+         * Декоратор ничего не возвращает, может, например, сохранить метаданные
+         */
+        function fieldDecorator(target: any, name: string): void {
+            if (showLog) {
+                console.log('target', target);
+                console.log('name', name);
+            }
+
+            // Так можно, но пока не понятно зачем.
+            const a1 = new target.constructor();
+            a1[name] = '123';
+            if (showLog) {
+                console.log('a1', a1);
             }
         }
 
-        @color('green')
-        class Test {
-            a = 0;
+
+        class A {
+
+            @fieldDecorator
+            public publicField: string = 'public field';
+            @fieldDecorator
+            protected protectedField: string;
+            @fieldDecorator
+            protected newField: string;
+
+            constructor(protectedField: string) {
+                this.protectedField = protectedField;
+            }
+
+            public publicMethod(): void {
+
+            }
+
+            protected protectedMethod(param: string): string {
+                return param;
+            }
         }
 
-        // log(new Test());
-    } // Моя поделка
+        const a = new A('protected field');
+        if (showLog) {
+            console.log('a', a);
+        }
+
+    } // Декоратор для полей
+
     {
-        function first() {
-            log('first decorator was called');
-            return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
-                console.log('first decorator', target, propertyKey, descriptor);
+        const showLog = true;
+        /**
+         * Декоратор ничего не возвращает
+         */
+        function paramDecorator(target: any, methodName: string, index: number): void {
+            if (showLog) {
+                console.log('target', target);
+                console.log('methodName', methodName || 'constructor');
+                console.log('index', index);
+            }
+        }
+
+
+        class A {
+
+            public publicField: string = 'public field';
+            protected protectedField: string;
+            protected newField: string;
+
+            constructor(@paramDecorator protectedField: string) {
+                this.protectedField = protectedField;
+            }
+
+            public publicMethod(): void {
+
+            }
+
+            protected protectedMethod(@paramDecorator param: string): string {
+                return param;
+            }
+        }
+
+        const a = new A('protected field');
+        if (showLog) {
+            console.log('a', a);
+        }
+
+    } // Декоратор для параметров
+
+
+    {
+        function color(value: string): Function {
+            // log('color decorator is created')
+            return (constructor: any) => {
+                // log('color decorator is called')
+                // log(constructor);
+                // constructor.prototype = function(color: string) { this.color = color };
+            }
+        }
+
+        interface IColor {
+            color: string;
+        }
+
+        type TCtor = {
+            new (...args: any[]): {},
+            color: string,
+         };
+
+        function color2<T extends TCtor>(targetClass: T) {
+            log('color2 decorator is created')
+            log(targetClass);
+
+            return class extends targetClass {
+                color = 'red';
+            }
+        }
+
+        // @color2
+        @color('green')
+        class Test {
+            // @color('red')
+            a = 0;
+            color = 'black';
+            constructor () {
+                this.a++;
+                // this.color = 'black'
+            }
+        }
+
+        const a = new Test();
+        // log(Test);
+        // log(a);
+        // log(a.color);
+        // console.log('Reflect', Reflect);
+
+    } // Моя поделка
+
+    {
+        function first1() {
+            // log('first decorator was called');
+            return (...args: any[]) => {
+                // console.log('first decorator', args);
             }
         }
 
         function test(name: string) {
-            log('test decorator was called for ' + name);
+            // console.log(`[${name}] evaluated`);
             return (...args: any[]) => {
-                log('test decorator for ' + name);
-                log(args);
+                // console.log(`[${name}] called`, args);
             }
         }
 
+        function testDecorator() {
+
+        }
+
+        // @testDecorator
         @test('class')
         class C {
             @test('static field')
             static Sum: number;
 
             @test('field')
-            private readonly x;
+            private x: number = 1;
 
             // @test('ctor')
-            constructor (x: number) {
+            constructor (@test('ctor param') x: number) {
                 this.x = x;
             }
 
-            // @first()
-            @test('method')
-            show() {
-                log(this.x);
+            @test('static method')
+            static show(@test('static method param') str: string) {
+                log(str);
             }
 
-            @test('prop')
-            get X() {
+            @test('get accessor')
+            get X(): number {
                 return this.x;
             }
+
+            @test('set accessor')
+            set X1(@test('set accessor param') value: number) {
+                this.x = value;
+            }
+
+            @test('method')
+            show(@test('method 1st param') str1: string, @test('method 2nd param') str2: string) {
+                log(str1 + str2);
+            }
+
         }
     } // Порядок вызовов
 }

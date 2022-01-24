@@ -7,6 +7,7 @@
       "strict": true,
       "target": "ESNext",
       "experimentalDecorators": true,
+      // "emitDecoratorMetadata": true,
       // "noUnusedLocals": true,
       "useDefineForClassFields": true,
       "strictNullChecks": false,

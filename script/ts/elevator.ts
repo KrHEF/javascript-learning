@@ -69,7 +69,6 @@ namespace ElevatorSaga {
          * @return {boolean} If true the indicator is on.
          */
         goingUpIndicator(): boolean;
-
         /**
          * Sets the going up indicator.
          *
@@ -85,7 +84,6 @@ namespace ElevatorSaga {
          * @return {boolean} If true the indicator is on.
          */
         goingDownIndicator(): boolean;
-
          /**
           * Sets the going down indicator.
           *
@@ -194,47 +192,111 @@ namespace ElevatorSaga {
 
     export type TDestDirection = TDirection | 'stopped';
 
-    export type TExDestDirection = TDestDirection | 'idle';
-
 }
 
 (function(): ElevatorSaga.IReturnObject {
 
     interface ISetting {
-        elevator: IElevatorSetting;
-        statistics: IStatisticsSetting;
-        logs: ILogSetting;
+        controller: IControllerSettings
+        elevator: IElevatorSettings;
+        statistics: IStatisticsSettings;
+        logs: ILogSettings;
     }
-    interface IElevatorSetting {
+
+    interface IControllerSettings {
         goToGroundFloorIfIdle: boolean;
+    }
+    interface IElevatorSettings {
         maxLoadFactorForExtraStop: number;
     }
 
-    interface IStatisticsSetting {
+    interface IStatisticsSettings {
         depth: number;
     }
 
-    interface ILogSetting {
+    interface ILogSettings {
         showLogInConsole: boolean;
+    }
+
+    interface IPenalties {
+        controller: IControllerPenalties;
+        elevator: IElevatorPenalties;
+    }
+
+    interface IControllerPenalties {
+        /**
+         * Штраф за отсутсвие лифта на 1 этаже.\
+         * Не считается, в случае вызова на первом этаже.
+         */
+        noElevatorOnTheGroudFloor: number;
+    }
+
+    interface IElevatorPenalties {
+        /**
+         * Штраф за использование лифта большей вместимости.\
+         * Считается на каждого пассажира.
+         */
+        byElevatorCapacity: number;
+
+        /**
+         * Штраф за количество перемещений до этажа
+         * Считается за каждый этаж
+         */
+        byElevatorsMove: number;
+
+        /**
+         * Штраф за расчетное количество секунд до этажа
+         * Ссчитается за каждую секунду
+         */
+        byElevatorsTime: number;
+
+
+        /**
+         * Штраф за пробег
+         * Считается за уже пройденные этажи
+         */
+        byPassedFloors: number;
     }
 
     let timer: number = 0;
     const settings: ISetting = {
-        elevator: {
+        controller: {
             goToGroundFloorIfIdle: false,
+        },
+        elevator: {
             maxLoadFactorForExtraStop: 0.7,
         },
         statistics: {
-            depth: 50,
+            depth: 10,
         },
         logs: {
             showLogInConsole: false,
         }
     }
 
+    const penalties: IPenalties = {
+        controller: {
+            noElevatorOnTheGroudFloor: 10,
+        },
+        elevator: {
+            byElevatorCapacity: 10,
+            byElevatorsMove: 1,
+            byElevatorsTime: 0.1,
+            byPassedFloors: 0,
+        }
+    }
+
 
     enum ElevatorStatus { stop, move, idle }
     enum Direction { up = 1, down = -1 }
+
+    // const SetSettings: ClassDecorator = <TFunc extends Function>(constructor: TFunc): void | TFunc => {
+    //     return class extends constructor {
+    //         // const settings
+    //         // const result = settings[]
+    //         // constructor['settings'] =
+    //     }
+    // }
 
     class Queue<T> {
 
@@ -460,6 +522,8 @@ namespace ElevatorSaga {
         }
 
     }
+
+    // @SetSetttings()
     class LogService {
 
         protected static _instance: LogService = new LogService();
@@ -526,6 +590,10 @@ namespace ElevatorSaga {
             return this.__elevator.loadFactor();
         }
 
+        public get maxCapacity(): number {
+            return this.__elevator.maxPassengerCount();
+        }
+
         public get direction(): Direction {
             return this.__direction;
         }
@@ -555,13 +623,13 @@ namespace ElevatorSaga {
         }
 
         protected setIndicators(): void {
-            if (this.__status === ElevatorStatus.idle) {
-                this.__elevator.goingUpIndicator(false);
-                this.__elevator.goingDownIndicator(false);
-            } else {
-                this.__elevator.goingUpIndicator(this.__direction === Direction.up);
-                this.__elevator.goingDownIndicator(this.__direction === Direction.down);
-            }
+            // if (this.__status === ElevatorStatus.idle) {
+            //     this.__elevator.goingUpIndicator(false);
+            //     this.__elevator.goingDownIndicator(false);
+            // } else {
+            this.__elevator.goingUpIndicator(this.__direction === Direction.up);
+            this.__elevator.goingDownIndicator(this.__direction === Direction.down);
+            // }
         }
 
         protected setQueue(newQueue: number[]) {
@@ -634,6 +702,16 @@ namespace ElevatorSaga {
         protected _backQueue: Queue<number> = new Queue();
         protected _nextDirection: Direction | 0 = 0;
 
+        protected _settings: IElevatorSettings;
+        protected _penalties: IElevatorPenalties;
+
+        constructor(index: number, elevatorSaga: ElevatorSaga.IElevator) {
+            super(index, elevatorSaga);
+
+            this._settings = settings.elevator;
+            this._penalties = penalties.elevator;
+        }
+
         public get isIdle(): boolean {
             return this.status === ElevatorStatus.idle;
         }
@@ -647,7 +725,17 @@ namespace ElevatorSaga {
             // return this.isIdle || this.alongTheWay(floorNum, direction));
         }
 
-        public addFloorQueue(floorNum: number, direction: Direction): void {
+        /**
+         * Somebody pressed button on the floor
+         * @param {number} floorNum floor number where button is pressed
+         * @param {Direction} direction direction where button is pressed
+         * @param {boolean} [stopNow=false] stop on the current floor before moving
+         */
+        public callOnFloor(
+            floorNum: number,
+            direction: Direction,
+            stopNow: boolean = false,
+        ): void {
             if (this.status !== ElevatorStatus.idle) {
                 throw new Error('The elevator is not idle');
             }
@@ -657,6 +745,11 @@ namespace ElevatorSaga {
             } else {
                 const newDirection: Direction = (floorNum > this.currentFloor) ? Direction.up : Direction.down;
                 this.setDirection(newDirection);
+
+                if (stopNow) {
+                    this._queue.rpush(this.currentFloor);
+                    console.log('stop now');
+                }
 
                 if (direction !== newDirection) {
                     this._nextDirection = direction;
@@ -745,6 +838,8 @@ namespace ElevatorSaga {
 
         protected _singleMode: boolean;
         protected _elevators: Elevator[];
+        protected _settings: IControllerSettings;
+        protected _penalties: IControllerPenalties;
         /**
          * Floors in call order\
          * `< 0` - call down\
@@ -766,24 +861,25 @@ namespace ElevatorSaga {
                 return elevator;
             });
 
-            if (settings.logs.showLogInConsole) {
-                console.log('controller:', this);
-            }
+            this._settings = settings.controller;
+            this._penalties = penalties.controller;
+
+            console.log('controller:', this);
         }
 
-        public queue(floorNum: number, direction: Direction): void {
+        public callOnFloor(floorNum: number, direction: Direction): void {
             const elevator: Elevator = this.chooseElevator(floorNum, direction);
 
             if (elevator) {
                 LogService.add(`Add queue to the Elevator #${elevator.index} (floorNum: ${floorNum}, direction: ${Direction[direction]})`);
-                elevator.addFloorQueue(floorNum, direction);
+                elevator.callOnFloor(floorNum, direction);
             } else {
                 LogService.add(`Add queue to the controller (floorNum: ${floorNum}, direction: ${Direction[direction]})`);
-                this.addFloorQueue(floorNum, direction);
+                this.addCallQueue(floorNum, direction);
             }
         }
 
-        protected addFloorQueue(floorNum: number, direction: Direction): void {
+        protected addCallQueue(floorNum: number, direction: Direction): void {
             this._queues.rpush(direction * floorNum);
         }
 
@@ -798,13 +894,26 @@ namespace ElevatorSaga {
         }
 
         protected onElevatorIdle(elevator: Elevator): void {
-            if (!this._queues.size) { return; }
+            if (!this._queues.size) {
+                if (!elevator.currentFloor && this._settings.goToGroundFloorIfIdle) {
+                    elevator.callOnFloor(0, Direction.up);
+                }
+                return;
+            }
 
-            const waitingFloor: number = this._queues.lpop(),
-                direction: Direction = (waitingFloor < 0) ? Direction.down : Direction.up;
-            let nearestElevator: Elevator = this.chooseElevator(Math.abs(waitingFloor), direction) || elevator;
+            const nextQueue: number = this._queues.lpop(),
+                direction: Direction = (nextQueue < 0) ? Direction.down : Direction.up,
+                waitingFloor: number = Math.abs(nextQueue);
+            let nearestElevator: Elevator = this.chooseElevator(waitingFloor, direction) || elevator;
 
-            nearestElevator.addFloorQueue(Math.abs(waitingFloor), direction);
+            let nextDirection: Direction = direction;
+            let stopNow: boolean = false;
+            if (waitingFloor !== nearestElevator.currentFloor) {
+                nextDirection = (waitingFloor < nearestElevator.currentFloor) ? Direction.down : Direction.up;
+                stopNow = this._queues.has(nextDirection * nearestElevator.currentFloor);
+            }
+
+            nearestElevator.callOnFloor(waitingFloor, direction, stopNow);
         }
 
         protected onElevatorStop(elevator: Elevator): void {
@@ -814,7 +923,7 @@ namespace ElevatorSaga {
         protected onElevatorPreStop(floorNum:number, elevator: Elevator): void {
             if (elevator.loadFactor > settings.elevator.maxLoadFactorForExtraStop) { return; }
 
-            if (this._queues.delete(floorNum * elevator.direction)) {
+            if (this._queues.has(floorNum * elevator.direction)) {
                 elevator.stopOnFloor(floorNum);
             }
         }
@@ -829,11 +938,11 @@ namespace ElevatorSaga {
             floors.forEach((floor) => {
                 floor.on('up_button_pressed', () => {
                     LogService.add(`Floor #${floor.floorNum()}: button UP is pressed.`);
-                    controller.queue(floor.floorNum(), Direction.up);
+                    controller.callOnFloor(floor.floorNum(), Direction.up);
                 })
                 .on('down_button_pressed', () => {
                     LogService.add(`Floor #${floor.floorNum()}: button DOWN is pressed.`);
-                    controller.queue(floor.floorNum(), Direction.down);
+                    controller.callOnFloor(floor.floorNum(), Direction.down);
                 });
             });
         },
