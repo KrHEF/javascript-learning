@@ -11,10 +11,10 @@ type FunctionMetaType = {
 const funcsMeta: FunctionMetaType[] = [];
 
 // Манипулирование DOM
-if (1) {
+if (0) {
     addFunctionMeta({ title: "Доступ к DOM через document",
         func: () => document,
-    }); 
+    });
     addFunctionMeta({ title: "Доступ к <head>",
         func: () => document.head,
     });
@@ -101,7 +101,7 @@ if (0) {
                 bb[0].outerHTML = "<i>" + bb[0].textContent + "</i>";
                 return bb[0];
             }
-            return bb; 
+            return bb;
         },
     });
     addFunctionMeta({ title: "nodeValue",
@@ -109,9 +109,9 @@ if (0) {
     });
     addFunctionMeta({ title: "data",
         warning: "Почти тоже самое, что nodeValue",
-        func: () => (codeWrapper?.previousSibling?.previousSibling) 
+        func: () => (codeWrapper?.previousSibling?.previousSibling)
             //@ts-ignore
-            ? codeWrapper.previousSibling.previousSibling["data"] 
+            ? codeWrapper.previousSibling.previousSibling["data"]
             : '',
     });
     addFunctionMeta({ title: "textContent",
@@ -135,7 +135,7 @@ if (0) {
     });
     addFunctionMeta({ title: "setAttribute and attributes",
         warning: "attributes возвращает динамическую коллекцию, и т. к. дальше атрибут удаляется, то он отсутствует",
-        func: () => { 
+        func: () => {
             codeWrapper?.setAttribute('myAttr', '123');
             return codeWrapper?.attributes;
         },
@@ -177,7 +177,7 @@ if (0) {
         },
     });
     addFunctionMeta({ title: "document.createTextNode",
-        func: () => { 
+        func: () => {
             text = document.createTextNode("Привет, Мир!");
             return text;
         },
@@ -254,9 +254,9 @@ if (0) {
     });
 }
 
-// Стили и классы 
+// Стили и классы
 if (0) {
-    const codeWrapper: HTMLElement | null = document.querySelector("#code-wrapper"); 
+    const codeWrapper: HTMLElement | null = document.querySelector("#code-wrapper");
 
     addFunctionMeta({ title: "Вся строка с названиями класса elem.className",
         func: () => codeWrapper!.className += " custom" ,
@@ -270,7 +270,7 @@ if (0) {
     });
     addFunctionMeta({ title: "Задание стиля элемента через объект elem.style",
         warning: "Для свойства из нескольких слов используется camelCase",
-        func: () => { 
+        func: () => {
             codeWrapper!.style.backgroundColor = "red";
             codeWrapper!.style.height = "1vh";
             return codeWrapper?.style;
@@ -284,7 +284,7 @@ if (0) {
     });
     addFunctionMeta({ title: "Задание нескольких стилей строкой через elem.style.cssText",
         warning: "Удаляет все существующие стили в атрибуте style",
-        func: () => { 
+        func: () => {
             codeWrapper!.style.cssText = "background-color: yellow; width: 25vw; height: 2vh;"
         },
     });
@@ -307,7 +307,7 @@ if (1) {
 }
 
 // interface IHostedField {
-//     name: string; 
+//     name: string;
 // };
 
 // function _get<T>(obj: any, path: string, defaultValue: T): T {
@@ -323,19 +323,19 @@ if (1) {
 // let hostedFields5: IHostedField[] = _.get<any, string, IHostedField>(this, 'hostedFields.fields', {name: ""}); // Возможна ошибка, см. 4)
 // let hostedFields6: IHostedField[] = _get<IHostedField[]>(this, 'code-wrapper', [{name: ''}]); // Решены все проблемыЖ 1,2,3,4)))).
 
-// // console.log(hostedFields0);   
+// // console.log(hostedFields0);
 // console.log(hostedFields1);
 // console.log(hostedFields2);
 // console.log(hostedFields6);
 
 // 1) нет проверки на существования поля this.hostedFields - м/б undefined.
 // 2) Пустой объект {} не соответствует типу переменной IHostedField[]
-// 3) Пустой объект на соответствует интерфейсу IHostedField. 
-// 4) Тип значения по умолчанию IHostedField не соответствует типу переменной IHostedField[]. 
+// 3) Пустой объект на соответствует интерфейсу IHostedField.
+// 4) Тип значения по умолчанию IHostedField не соответствует типу переменной IHostedField[].
 
 
 // class Class1 {
-    
+
 //     constructor (public name: string) {}
 
 //     get Name() {
@@ -357,14 +357,14 @@ if (1) {
 // function factory<T>(): T {
 //     return new T();
 // }
- 
+
 // // let class1 = factory<Class1>("name1");
 // let class2 = new Class2("name2", "country1");
 // // console.log(class1.Name);
 // console.log(class2.Name);
 
 // class Class3 {
-    
+
 //     constructor  (private name: string) {
 //         this.name = name;
 //     }
@@ -386,16 +386,16 @@ if (1) {
 // let x:number = +('0' + 'x' + 'A');
 // // do {
 // //     x = + '1' + '0'
-// // } while 
+// // } while
 // console.log(x--);
 
- 
+
 function addFunctionMeta(funcMeta: FunctionMetaType): void {
     funcsMeta.push(funcMeta);
 }
 
 (function showFunctionsMeta(): void {
-    
+
     let codeWrapper: HTMLElement | null = document.getElementById('code-wrapper');
 
     funcsMeta.forEach( (funcMeta: FunctionMetaType) => {
@@ -407,7 +407,7 @@ function addFunctionMeta(funcMeta: FunctionMetaType): void {
         // }
         // codeWrapper.append(nodeDList);
         // nodeDList.innerHTML = '<dl><dt>' + funcMeta.title + '</dt><dd>' + funcMeta.func + '</dd>';
-        
+
         if (funcMeta.title) {
             console.warn( funcMeta.title );
         }
@@ -428,7 +428,7 @@ function addFunctionMeta(funcMeta: FunctionMetaType): void {
         } else {
             console.log(result);
         }
-    });   
+    });
 })();
 
 
