@@ -210,6 +210,21 @@ namespace ElevatorSaga {
          * При простое возвращаться на 0 этаж.
          */
         returnToGroundFloorIfIdle: boolean;
+
+        /**
+         * Выборе следующего этажа: первый в списке или максимальный.
+         */
+        chooseNextFloor: 'first' | 'max';
+
+        /**
+         * При выборе этажа игнорировать 0 этаж, 0 этаж помещать в конец очереди.
+         */
+        ignoreFirstFloor: boolean;
+
+        /**
+         * Максимальное время ожидания
+         */
+        maxWaitingTime: number;
     }
     interface IElevatorSettings {
         /**
@@ -217,6 +232,11 @@ namespace ElevatorSaga {
          * Значение от 0,5 до 1. Ниже 0,5 смысла ставить нет.
          */
         maxLoadFactorForExtraStop: number;
+
+        /**
+         * Задерживаться на 0 этаже при нажатии кнопок вызова
+         */
+        waitingOnGroundFloor: boolean;
     }
 
     interface IStatisticsSettings {
@@ -302,9 +322,13 @@ namespace ElevatorSaga {
     const settings: ISetting = {
         controller: {
             returnToGroundFloorIfIdle: false,
+            chooseNextFloor: 'max',
+            ignoreFirstFloor: true,
+            maxWaitingTime: 30,
         },
         elevator: {
             maxLoadFactorForExtraStop: 0.7,
+            waitingOnGroundFloor: true,
         },
         statistics: {
             depth: 10,
@@ -833,7 +857,7 @@ namespace ElevatorSaga {
         protected _backQueue: Queue<number> = new Queue();
 
         protected _state: ElevatorState = ElevatorState.default;
-        protected _nextDirection: Direction | 0 = 0;
+        // protected _nextDirection: Direction | 0 = 0;
 
         protected _settings: IElevatorSettings;
         protected _penalties: IElevatorPenalties;
@@ -882,19 +906,21 @@ namespace ElevatorSaga {
                 throw new Error('The elevator is not idle');
             }
 
-            if (floorNum === this.currentFloor) {
-                this.setDirection(direction);
-            } else {
-                const newDirection: Direction = (floorNum > this.currentFloor) ? Direction.up : Direction.down;
-                this.setDirection(newDirection);
+            // if (floorNum === this.currentFloor) {
+            //     this.setDirection(direction);
+            // } else {
+            //     const newDirection: Direction = (floorNum > this.currentFloor) ? Direction.up : Direction.down;
+            //     this.setDirection(newDirection);
 
-                this._state = ElevatorState.direct;
-                this._nextDirection = direction;
-            }
+            //     this._state = ElevatorState.direct;
+            //     this._nextDirection = direction;
+            // }
 
             LogService.add({object: 'elevator', index: this.index},
                 `Took the #${direction * floorNum} floor`);
 
+            this.setDirection(direction);
+            this._state = ElevatorState.direct;
             this._queue.rpush(floorNum);
             this.setQueue();
         }
@@ -941,8 +967,8 @@ namespace ElevatorSaga {
             if (!this._queue.size) {
 
                 if (this._state === ElevatorState.direct) {
-                    this.setDirection(this._nextDirection);
-                    this._nextDirection = 0;
+                    // this.setDirection(this._nextDirection);
+                    // this._nextDirection = 0;
                     this._state = ElevatorState.delivery;
                     this._subscriber.emit('pickup');
                     return;
@@ -979,8 +1005,9 @@ namespace ElevatorSaga {
             const direction: Direction = (floor > this.currentFloor) ? Direction.up : Direction.down;
 
             // Cancel the erroneous queue
-            if (this._state === ElevatorState.direct && this._nextDirection != direction) {
+            if (this._state === ElevatorState.direct && this.direction != direction) {
                 this._state = ElevatorState.delivery;
+                this.setDirection(direction);
                 this.cancelQueue();
             }
 
@@ -988,7 +1015,13 @@ namespace ElevatorSaga {
                 LogService.add({object: 'elevator', index: this.index},
                     `Added the #${floor} floor into queue`);
 
-                this._queue.rpush([this.currentFloor, floor]);
+                if (this._settings.waitingOnGroundFloor
+                && !this.currentFloor
+                && (this.loadFactor <= this._settings.maxLoadFactorForExtraStop)) {
+                    this._queue.rpush([this.currentFloor, floor]);
+                } else {
+                    this._queue.rpush(floor);
+                }
                 this.setQueue();
             } else {
                 LogService.add({object: 'elevator', index: this.index},
@@ -1004,8 +1037,8 @@ namespace ElevatorSaga {
 
         protected cancelQueue(): void {
             let floor: number = this._queue.lpop() ?? -1;
-            const direction: Direction = this._nextDirection;
-            this._nextDirection = 0;
+            const direction: Direction = -1 * this.direction;
+            // this._nextDirection = 0;
 
             if (floor < 0) { return; }
 
@@ -1110,13 +1143,28 @@ namespace ElevatorSaga {
         }
 
         protected getNextQueue(): number {
-            if (this._queues.size > 1 && this._queues.values[0] === this._borderFloors[0]) {
-                const values: number [] = this._queues.lpop(2);
-                this._queues.rpush(values[0])
-                return values[1];
+            if (this._queues.size === 1) {
+                return this._queues.lpop();
             }
 
-            return this._queues.lpop();
+            switch (this._settings.chooseNextFloor) {
+                case 'max':
+                    const nextQueue: number  = this._queues.values.reduce((value: number, queue: number) => {
+                        return (Math.abs(queue) > Math.abs(value)) ? queue : value;
+                    });
+                    this._queues.delete(nextQueue);
+                    return nextQueue;
+
+                case 'first':
+                default:
+                    if (this._settings.ignoreFirstFloor && !this._queues.values[0]) {
+                        const values: number [] = this._queues.lpop(2);
+                        this._queues.rpush(values[0])
+                        return values[1];
+                    }
+
+                    return this._queues.lpop();
+            }
         }
 
         protected onElevatorIdle(elevator: Elevator): void {
