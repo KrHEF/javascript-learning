@@ -686,6 +686,48 @@ let log = (obj: any = '') => console.log(obj);
 
 }
 
+// Условные типы (Conditional types)
+{
+    {
+        interface X {
+            x: number;
+        }
+
+        interface Y {
+            y: number;
+        }
+
+        type Z<T> =
+            T extends X ? X :
+            T extends Y ? Y :
+            never;
+
+        let a = { x: 1};
+        let A: Z<typeof a>; // A: X
+        let b = {y: 1};
+        let B: Z<typeof b>; // B: Y
+
+        let C: Z<string>;   // C: never
+    } // Conditional types
+    {
+
+    } // Распределённые условные типы (Distributed conditional types)
+    {
+        type A<T> = T extends {a: infer U, b: infer U} ? U : T;
+        type A1 = A<{a: number}>; // A1: {a: number}
+        type A2 = A<{a: number, b: number}>; // A2: number
+        type A3 = A<{a: number, b: boolean}>; // A3: number | boolean
+
+        // делает тоже самое
+        type B<T> = T extends {a: infer U, b: infer V} ? U | V : T;
+        type B1 = B<{a: number}>; // A1: {a: number}
+        type B2 = B<{a: number, b: number}>; // A2: number
+        type B3 = B<{a: number, b: boolean}>; // A3: number | boolean
+
+    } // Выведение условных типов (извлечение типа)
+}
+
+
 // Служебные типы
 {
     {
