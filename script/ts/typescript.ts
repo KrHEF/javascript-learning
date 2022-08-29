@@ -220,7 +220,7 @@ let log = (obj: any = '') => console.log(obj);
 
         // log(arr.length);
 
-    } // prop! - отключение проверки на null и undefined, на совети разработчика
+    } // prop! - отключение проверки на null и undefined, на совести разработчика
 
     // Приведение к типу (без преобразования)
     // на самом деле ничего не приводится, просто мы говоим компилятору "Отвали, я сам разберусь!"
@@ -514,7 +514,7 @@ let log = (obj: any = '') => console.log(obj);
 // Intersection и Union для создание типов
 {
     {    // Union Объединение типов number | string
-        let func: (x: string | number) => string = (x) => {
+        let func = (x: string | number): string => {
             return x.toString()
         };
 
@@ -914,7 +914,6 @@ let log = (obj: any = '') => console.log(obj);
      * , где df1 - ф-я, которая возвращает декоратор
      *
      */
-
 
     {
         const showLog = false;
