@@ -2,33 +2,47 @@
  * Created by ef on 21.09.2020.
  */
 
-let log = (obj: any = '') => console.log(obj);
+function log<T> (result: T, ...params: any[]): T {
+    return result;
+ };
 
 // Типы TypeScript
-{
-    // Использовать название типов примитивов с маленькой буквы!
+function types() {
+    console.log('Использовать название типов примитивов с маленькой буквы!');
 
+    // boolean
     {
-        let b1: boolean = false;
-        if (b1)
-            log('' + b1);
-    } // Boolean
+        const b1: boolean = false;
+        console.log('Boolean тип', b1);
+    }
+
+    // number
     {
-        let x1: number = 6,
+        const x1: number = 66,
             x2: number = 0b01011,
             x3: number = 0o34672,
-            x4: number = 0x34afd;
-        if (!x1 || !x2 || !x3 || !x4)
-            // Вывод в другой системе счисления
-            log('0o' + x1.toString(8));
-    } // Number
+            x4: number = 0x34afd,
+            x5: number = 1_000_000;
+
+        console.log('Вывод числа в другой системе счисления:', x5 + ' = 0o' + x5.toString(8));
+    }
+
+    // string
     {
-        let str1: string = 'Hello, TypeScript!';
-        if (!str1) {
-        }
-    } // String
+        const str1: string = 'Hello, TypeScript!';
+    }
+
+    // bigint (1n)
     {
-        //Массив чисел, троку не добавить
+        const b1: bigint = 1n,
+            b2 = BigInt(2);
+
+        console.log('BigInt', b1 + b2);
+    }
+
+    // Array => [1, 2, 3, 4], Array<T>
+    {
+        //Массив чисел, строку не добавить
         let list1: number[] = [1, 2, 3];
         list1.push(123);
 
@@ -46,7 +60,21 @@ let log = (obj: any = '') => console.log(obj);
             log('list2: ' + list2.map((item) => typeof (item)));
             log('list3: ' + list3.map((item) => typeof (item)));
         }
-    } // Array => [1, 2, 3, 4], Array<T>
+
+        // Перебор по индексам
+        for (const key in list1) {
+            if (Object.prototype.hasOwnProperty.call(list1, key)) {
+                const element = list1[key];
+            }
+        }
+
+        // Перебор по значениям
+        for (const value of list2) {
+            // console.log(value);
+        }
+    }
+
+    // ReadonlyArray<T> - полностью иммутабельный
     {
         let arr0: ReadonlyArray<number | string> = [1, 2, '3', 4];
         // arr0.push(1);           // Error
@@ -55,17 +83,20 @@ let log = (obj: any = '') => console.log(obj);
         let arr2: Array<number> = arr0 as number[];     // Здесь потенциальная ошибка, т. к. arr0 может содержать
                                                         // и число, но об этом мы не узнаем при присваивании.
         // log(arr2);
+    }
 
-    } // ReadonlyArray<T> - полностью иммутабельный
+    // Tuple (array) - в переводе Кортеж, заданный типами массив и кол-во элементов.
     {
         let t1: [string, number];
         t1 = ['1', 2];
         t1.push('false', '4');      // на самом деле должен быть баг
         // t1.push(null);
 
-        if (t1[1] === 5)
-            log('tuple:' + t1.map((item) => typeof (item)));
-    } // Tuple (array) - в переводе Кортеж, заданный типами массив и кол-во элементов.
+        console.log('Типы кортежа [string, number]: ' + t1.map((item) => typeof (item)));
+    }
+
+    // Enum (object) - Именнованные константы.
+    // Enum - это не тип, это вместо let.
     {
         // Числовые и строковые перечисления
         // Элемент перечисления можно задавать функцией, но она должна стоять в конце, либо все элементы после него
@@ -76,16 +107,11 @@ let log = (obj: any = '') => console.log(obj);
 
         let c: Color = Color.Red;
 
-        if (c === 1) {
-            //log(Color[0]);      // Empty
-            log(Color[c]);      // Red
-            log(Color[2]);      // Green
-            log(Color.Blue);    // 3
-        }
+        console.log('Перечисление', 'Color[0] = ' + Color[0], ', Color[c] = ' + Color[c], ', Color[2] = ' + Color[2]);      // [Empty, Red, Green]
+        console.log('Перечисление', 'Color.Blue = ' + Color.Blue);    // 3
 
         // Строковые перечисления
         // Каждый член должен быть инициирован. Т. к. это константы, то с большой буквы.
-
         enum Direction {
             Up = "UP",
             Down = "DOWN",
@@ -99,20 +125,32 @@ let log = (obj: any = '') => console.log(obj);
             String = "",
             Boolean = "FALSE",
         }
+    }
 
+    // const enum
+    // При компиляции enum не создаётся.
+    {
+        const enum Error {
+            Unknown = 0,
+            Small = 1,
+            Normal = 2,
+            Critical = 3,
+        }
 
+        const a: number = Error.Critical;
+    }
 
-    } // Enum (object) - Именнованные константы. enum - это не тип, это вместо let.
     {
         let u1: unknown = 4;
 
-        if (typeof (u1) === "number") {
-            u1 = "something";
+        if (typeof u1 === 'number') {
+            const num: number = u1;
+            log(num);
         }
 
-        if (typeof (u1) === 'string') {
+        if (typeof u1 === 'string') {
             let str1: string = u1;
-            //log(str1);
+            log(str1);
         }
     } // Unknown - неизвестный тип. Присваивание другим переменным только через проверку типов.
     {
@@ -134,24 +172,31 @@ let log = (obj: any = '') => console.log(obj);
         if (v1 !== null)
             log('' + v1 + ', ' + v2 + ', ' + v3);
     } // Void - для функций в основном, для переменных странно.
+
+    // null и undefined
     {
-        // let n0: null = undefined;
+        // let n0: null = undefined;        // Error
         let n1: null = null;
-        // let n2: null = void 0;
-        // let n3: undefined = null;
+        // void 0 - это undefined
+        // let n2: null = void 0;           // Error
+        // let n3: undefined = null;        // Error
         let n4: undefined = undefined;
         let n5: undefined = void 0;
         // больше ничего не присовить
         // n1 = '';     // Error
         // n2 = 12;     // Error
-    } // Null, Undefined - странные типы, кроме этих значений больше им ничего не происвоить.
+    }
+
+    // Never - функция с never не должна закончиться (исключение или бесконечный цикл)
     {
         function funcError(): never {
             throw "Error";
         }
 
         //log(funcError);
-    } // Never - функция с never не должна закончиться (исключение или бесконечный цикл)
+    }
+
+    // Object - непримитив (объекты, масссивы)
     {
         let o1: object;
         // o1 = 1;         // Error
@@ -163,7 +208,9 @@ let log = (obj: any = '') => console.log(obj);
         enum Color { Red, Green, Blue};
         o1 = Color;
 
-    } // Object - непримитив (объекты, масссивы)
+    }
+
+    // Защитники типов - сужение через проверку на существования члена экземпляра класса
     {
         class Fish {
             swim(): void {
@@ -180,13 +227,14 @@ let log = (obj: any = '') => console.log(obj);
 
         let pet: Bird | Fish = (Math.random() > 0.5) ? new Bird() : new Fish();
 
-        // if (pet.fly) pet.fly();     // Error
+        // if (pet.fly) pet.fly();     // Ошибка, т. к. fly есть в обоих типах
+        if (pet.fly && typeof(pet.fly) == 'function') { pet.fly() };
 
         // Проверка оператором ... in ...
-        if ( "fly" in pet && typeof(pet.fly) == 'function' ) pet.fly();
-        if ( "swim" in pet && typeof(pet.swim) == 'function' ) pet.swim();
+        if ( 'fly' in pet && typeof(pet.fly) == 'function' ) { pet.fly() };
+        if ( 'swim' in pet && typeof(pet.swim) == 'function' ) { pet.swim() };
 
-        // Проверка оператором ... in ..., через сужение false
+        // Проверка оператором ... is ..., через сужение false
         // Это бы работало, если бы мы не усложнили классы, добавив поля
         // if ( "fly" in pet && typeof(pet.fly) == 'function' ) pet.fly()
         // else pet.swim();
@@ -197,13 +245,19 @@ let log = (obj: any = '') => console.log(obj);
         function isFish(pet: any): pet is Fish {
             return (pet as Fish).swim != undefined && typeof(pet.swim) == 'function';
         }
-        if (isFish(pet)) pet.swim()
-        else pet.fly();
+
+        if (isFish(pet)) {
+            pet.swim()
+        } else {
+            pet.fly();
+        }
 
         // instanceof, через prototype
 
 
-    } // Защитники типов - сужение через проверку на существования члена экземпляра класса
+    }
+
+    // Проверка на null (?? - оператор терсер)
     {
         function func3(param: string): string {
             return  param ?? "default";
@@ -213,29 +267,45 @@ let log = (obj: any = '') => console.log(obj);
         // log( func3(undefined) );    // default
         // log( func3("undefined") );  // undefined - it is string
 
-    } // Проверка на null (?? - оператор терсер)
+    }
+
+    // prop! - отключение проверки на null и undefined, на совести разработчика
     {
-        // Не получислось придумать пример
-        let arr: number[] | undefined = (Math.random() > 0.9) ? [1, 2, 3, 4] : undefined;
+        // Тут он "хитрец", сразу понял, что это строка.
+        let str1: string | null = "value";
 
-        // log(arr.length);
+        // А тут не понял, т. к. мы указади сами тип.
+        let str2: string | null = log<string | null>(str1, str1.length)
 
-    } // prop! - отключение проверки на null и undefined, на совести разработчика
+        // Поэтому тут нужен !
+        log(str2!.length);
+
+        class A {}
+
+        class B {
+            // a: A;        // Ошибка, поле не инициаизовано
+            a!: A;
+        }
+    }
 
     // Приведение к типу (без преобразования)
-    // на самом деле ничего не приводится, просто мы говоим компилятору "Отвали, я сам разберусь!"
     {
-        let x1: unknown = 1;
-//    log((x1 as string).length);       // Empty string;
-    } // через "x as type"
-    {
-        let x1: unknown = 1;
-        // log((<string>x1).length);        // Empty string;
-    } // через "<type>x"
+        // на самом деле ничего не приводится, просто мы говоим компилятору "Отвали, я сам разберусь!"
+
+        let str: unknown = "1";
+        // log(str.length);                    // Ошибка
+
+        // через "x as type"
+        log((str as string).length);
+
+        // через "<type>x"
+        log((<string>str).length);
+    }
 }
+// types();
 
 // Интерфейсы TrueScript
-{
+const interfaces = () => {
     // Инстрефейсы работают по принципу "утиной типизации" или "стрктурнго подтипирования".
     // Компилятор проверяет, что переданный объект удовлетворяет описанной структуре
     //  name? - опциональное св-во
@@ -410,7 +480,7 @@ let log = (obj: any = '') => console.log(obj);
 }
 
 // Функции
-{
+const functions = () => {
     {
         // Named function
         function add(x: number, y: number) {
@@ -485,12 +555,18 @@ let log = (obj: any = '') => console.log(obj);
     } // Перегрузки функнкций - задание возможных типов принимаемых параметров и возвращаемых значений.
 }
 
-// Литеральные типы: String, Number, Boolean и задание типов
-{
+// Литеральные типы: String, Number, Boolean
+// Задание типов
+function literalTypes() {
+    console.group('Задание типов');
+
+    // Сужение, задание переменной через const, которая может иметь 1 значение, вместо бесконечно возможных.
     {
         let a1 = 'str';
         const a2 = 'str';
-    } // Сужение, задание переменной через const, которая может иметь 1 значение, вместо бесконечно возможных.
+    }
+
+    // Задание типа через возможноые значений примитивов
     {
         type Easing = 'ease-in' | 'ease-out' | 'ease-in-out';
         type LuckyNumbers = 7 | 77 | 777;
@@ -508,12 +584,56 @@ let log = (obj: any = '') => console.log(obj);
             return new Element();
         }
 
-    } // Задание типа через возможноые значений примитивов
+    }
+
+    // Задание типов через keyof
+    // получение название из полей объекта
+    {
+        interface A {
+            a: string;
+            b: number;
+            c: boolean;
+            '1': string;
+            [2]: number;
+        }
+
+        type KeysA = keyof A;
+        const name1: KeysA = 'a';       // 'a' | 'b' | 'c' | '1' | 2
+        // const name2: KeysA = 'd';    // Error
+    }
+
+    // keyof для перечеслений
+    {
+        enum Currency {
+            RUB = 99,
+            USD = 19,
+            EUR = 20,
+        }
+
+        const currencyName = {          // С типом тут сложно, стоит указать, н-р, Record<number, string> и ошибка ниже исчезнет.
+            [Currency.RUB]: 'Russian Rouble',
+            [Currency.EUR]: 'Euro',
+        }
+
+        function getCurrencyName<M, K extends keyof M>(key: K, map: M): M[K] {
+            return map[key];
+        }
+
+        console.log('RUB: ' + getCurrencyName(Currency.RUB, currencyName));
+        // console.log('USD: ' + getCurrencyName(Currency.USD, currencyName));      // Error
+        console.log('EUR: ' + getCurrencyName(Currency.EUR, currencyName));
+    }
+
+    console.groupEnd();
 }
+// literalTypes();
 
 // Intersection и Union для создание типов
-{
-    {    // Union Объединение типов number | string
+if (false) {
+
+    // Union / Объединение (через |)
+    {
+        // Union Объединение типов number | string
         let func = (x: string | number): string => {
             return x.toString()
         };
@@ -531,7 +651,9 @@ let log = (obj: any = '') => console.log(obj);
         // Также можно в проверке сделать проверку на полноту, если указать возвращаемое значение
         // или вызов ошибки в случае default
         // https://www.typescriptlang.org/docs/handbook/unions-and-intersections.html#union-exhaustiveness-checking
-    } // Union / Объединение (через |)
+    }
+
+    // Intersection / Пересечение (через &)
     {
         // Это объвление типов через &, которые содержат все члены всех типов.
         // видимо надо проверять, что этот тип имеет это свойтво
@@ -565,11 +687,11 @@ let log = (obj: any = '') => console.log(obj);
             console.log(response.artists);
         };
 
-    } // Intersection / Пересечение (через &)
+    }
 }
 
 // Классы
-{
+if (false) {
     {
         // public - публичное поле, видно снаружи и следовательно в подклассах
         // protected - защищенные поля, не видны снаружи, но видны в подклассах
@@ -675,19 +797,82 @@ let log = (obj: any = '') => console.log(obj);
     } // Использование класса в качестве Интерфейса
 }
 
-// Generics / Шаблоны
-{
-    function identity<T>(args: T): T {
-        return args;
+// Generics / Обобщения
+function generics() {
+
+    // Простые примеры
+    {
+        function identity<T>(args: T): T {
+            return args;
+        }
+
+        const id:number = identity<number>(5);     // Явное задание типа
+        const arr: number[] = identity([1, 2, 3]);     // Автоматическое определение типа по параметру
     }
 
-    // log( identity<number>(5) );     // Явное задание типа
-    // log( identity([1, 2, 3]) );     // Автоматическое определение типа по параметру
+    // Создание класса через обобщения
+    {
+        console.groupCollapsed('Создание класса через обобщения');
 
-}
+        type Constructor<T> = new(...args: any[]) => T;
+        type ConstructorX = new(value: number) => X;
+        type ConstructorY = new() => Y;
+        type ConstructorParams<T> =
+            T extends X | Z ? ConstructorParameters<ConstructorX> :
+            T extends Y ? ConstructorParameters<ConstructorY> :
+            never;
 
-// Условные типы (Conditional types)
-{
+        abstract class Letter {
+            abstract print(): void;
+        }
+
+        class X extends Letter {
+            constructor(
+                protected value: number,
+            ) {
+                super();
+            }
+
+            override print() {
+                console.log('X:' + this.value.toString());
+            }
+        }
+
+        class Y extends Letter {
+            override print() {
+                console.log('Y');
+            }
+        }
+
+        class Z extends X {
+            override print() {
+                console.log('Z:' + this.value.toString());
+            }
+        }
+
+
+        // type ConstructorParams<T> = T extends new(...args: infer R) => any ? R : never;
+        // type ConstructorParameters<T extends abstract new (...args: any) => any> = T extends abstract new (...args: infer P) => any ? P : never;
+
+
+        class Creator {
+            private constructor() {};
+
+            static get<T extends Letter>(ctor: Constructor<T>, ...args: ConstructorParams<T>): T {
+                const result: T = new ctor(...args);
+                result.print();
+                return result;
+            }
+        }
+
+        const x1: X = Creator.get(X, 3);
+        const y1: Y = Creator.get(Y);
+        const z1: Z = Creator.get(Z, 1);
+
+        console.groupEnd();
+    }
+
+    // Условные типы (Conditional types)
     {
         interface X {
             x: number;
@@ -708,10 +893,45 @@ let log = (obj: any = '') => console.log(obj);
         let B: Z<typeof b>; // B: Y
 
         let C: Z<string>;   // C: never
-    } // Conditional types
-    {
+    }
 
-    } // Распределённые условные типы (Distributed conditional types)
+    // Распределённые условные типы (Distributed conditional types)
+    {
+        //  Это почти тоже самое, что условный тип, но позволяет выводить типы по заданым правилам
+        type DistributedValue<T> =
+            T extends Date ? Date :
+            T extends number ? Date | number :
+            T extends string ? Date | number | string :
+            never;
+
+        function compare<T>(val1: T, val2: DistributedValue<T>): boolean {
+            const result = false;
+
+            return result;
+        }
+
+        compare(new Date(), new Date());
+        // compare(new Date(), 1);      // Error - number не Date
+        // compare(new Date(), '1');    // Error - string не Date
+        // compare(new Date(), false);  // Error - тип не разрешен вообще
+
+        compare(1, new Date());
+        compare(1, 2);
+        // compare(1, '1');             // Error
+        // compare(1, false);           // Error
+
+        compare('1', new Date());
+        compare('1', 1);
+        compare('1', '2');
+        // compare('1', false);         // Error
+
+        // compare(true, new Date());   // Error - тип never для 2-го параметра
+        // compare(true, 1);            // Error
+        // compare(true, '1');          // Error
+        // compare(true, false);        // Error
+    }
+
+    // Выведение условных типов (извлечение типа)
     {
         type A<T> = T extends {a: infer U, b: infer U} ? U : T;
         type A1 = A<{a: number}>; // A1: {a: number}
@@ -724,12 +944,14 @@ let log = (obj: any = '') => console.log(obj);
         type B2 = B<{a: number, b: number}>; // A2: number
         type B3 = B<{a: number, b: boolean}>; // A3: number | boolean
 
-    } // Выведение условных типов (извлечение типа)
+    }
+
 }
+// generics();
 
 
 // Служебные типы
-{
+if (false) {
     {
         interface Animal {
             name: string;
@@ -829,7 +1051,7 @@ let log = (obj: any = '') => console.log(obj);
 
     } // Parameters<Type> - задаёт тип как кортеж из параметра функции
     {
-    } // ConstructorParameter<Type> - задает тип, как кортеж или массив из фукнции-конструктора
+    } // ConstructorParameters<Type> - задает тип, как кортеж или массив из фукнции-конструктора
     {
     } // ReturnType<Type> - тип из возвращаемого значения функции
     {
@@ -889,50 +1111,47 @@ let log = (obj: any = '') => console.log(obj);
         const t3: T3 = 'a1',
             t4: T4 = 'Aa';
     } // Uppercase<StringType> and Sting Unions in Types (ругается компилятор)
-    {
-
-    }
 }
 
-// Декораторы
-{
-    /**
-     * Декораторы бывают:
-     * - для класса
-     * - для метода
-     * - аксессоров
-     * - свойств
-     * - параметров
-     *
-     *
-     * Записть декораторов:
-     * @d1 @d2 obj => @d1(@d2(obj))
-     *
-     *
-     * Фабрика декораторов - специальная фнкция, которая возвращает декоратор
-     * @df1() obj
-     * , где df1 - ф-я, которая возвращает декоратор
-     *
-     */
+/** Декораторы
+ *
+ * Декораторы бывают:
+ * - для класса
+ * - для метода
+ * - аксессоров
+ * - свойств
+ * - параметров
+ *
+ *
+ * Записть декораторов:
+ * @d1 @d2 obj => @d1(@d2(obj))
+ *
+ *
+ * Фабрика декораторов - специальная фнкция, которая возвращает декоратор
+ * @df1() obj
+ * , где df1 - ф-я, которая возвращает декоратор
+ *
+ */
+function decorators() {
 
+    /**
+     * Декораторы для классов
+     * Декоратор может вернуть новый класс.
+     */
     {
-        const showLog = false;
-        /**
-         * Декоратор может вернуть новый класс.
-         */
-        function classDecorator(constructor: typeof A): typeof A | void {
-            if (showLog) {
-                console.log('constructor', constructor);
-            }
-            const A = class extends constructor {
-                protected override newField: string = 'new field';
-                private newField2: string = 'new field 2';
+        console.groupCollapsed('Декораторы для классов');
+
+        function classDecorator(BaseClass: typeof A): typeof A {
+            console.log('constructor', BaseClass);
+
+            return class extends BaseClass {
+                protected override field: string = 'new field';
+                private field2: string = 'new field 2';
 
                 constructor(str: string) {
                     super('new ' + str);
                 }
             }
-            return A;
         }
 
         @classDecorator
@@ -940,7 +1159,7 @@ let log = (obj: any = '') => console.log(obj);
 
             public publicField: string = 'public field A';
             protected protectedField: string;
-            protected newField: string = 'old field';
+            protected field: string = 'old field';
 
             constructor(protectedField: string) {
                 this.protectedField = protectedField;
@@ -960,27 +1179,24 @@ let log = (obj: any = '') => console.log(obj);
             public override publicField: string = 'public field B';
         }
 
-
         const a = new A('protected field A');
         const b = new B('protected field B')
-        if (showLog) {
-            console.log('ClassDecorator, new A() =>', a);
-            console.log('ClassDecorator, new B() =>', b);
-        }
-    } // Декораторы для классов
+        console.log(A, a);
+        console.log(B, b);
+        console.groupEnd();
+    }
 
+    /**
+     * Декораторы для методов (и аксессоров)
+     * Могут вернуть новые свойства метода.
+     */
     {
-        const showLog = false;
+        console.groupCollapsed('Декораторы для методов (и аксессоров)');
 
-        /**
-         * Декоратор может вернуть новые свойства метода.
-         */
         function methodDecorator<T>(target: any, name: string, prop: TypedPropertyDescriptor<T>): void | TypedPropertyDescriptor<T> {
-            if (showLog) {
-                console.log('target', target);
-                console.log('name', name);
-                console.log('prop', prop);
-            }
+            console.log('target', target);
+            console.log('name', name);
+            console.log('prop', prop);
 
             return prop;
         }
@@ -990,7 +1206,7 @@ let log = (obj: any = '') => console.log(obj);
 
             public publicField: string = 'public field';
             protected protectedField: string;
-            protected newField: string;
+            protected newField: string = '';
 
             constructor(protectedField: string) {
                 this.protectedField = protectedField;
@@ -1009,32 +1225,26 @@ let log = (obj: any = '') => console.log(obj);
         }
 
         const a = new A('protected field');
-        if (showLog) {
-            console.log('a', a);
-        }
+        console.log(A, a);
         a.publicMethod();
+        console.groupEnd();
+    }
 
-    } // Декоратор для методов (и аксессоров)
-
+    /**
+     * Декораторы для полей
+     * Ничего не возвращают, но могут, например, сохранить метаданные
+     */
     {
-        const showLog = false;
-        /**
-         * Декоратор ничего не возвращает, может, например, сохранить метаданные
-         */
+        console.groupCollapsed('Декораторы для полей');
+
         function fieldDecorator(target: any, name: string): void {
-            if (showLog) {
-                console.log('target', target);
-                console.log('name', name);
-            }
+            console.log({target, name});
 
             // Так можно, но пока не понятно зачем.
             const a1 = new target.constructor();
             a1[name] = '123';
-            if (showLog) {
-                console.log('a1', a1);
-            }
+            console.log('a1', a1);
         }
-
 
         class A {
 
@@ -1043,7 +1253,7 @@ let log = (obj: any = '') => console.log(obj);
             @fieldDecorator
             protected protectedField: string;
             @fieldDecorator
-            protected newField: string;
+            protected newField: string = '';
 
             constructor(protectedField: string) {
                 this.protectedField = protectedField;
@@ -1059,31 +1269,26 @@ let log = (obj: any = '') => console.log(obj);
         }
 
         const a = new A('protected field');
-        if (showLog) {
-            console.log('a', a);
-        }
+        console.log(A, a);
+        console.groupEnd();
+    }
 
-    } // Декоратор для полей
-
+    /**
+     * Декораторы для параметров
+     * Ничего не возвращает
+     */
     {
-        const showLog = true;
-        /**
-         * Декоратор ничего не возвращает
-         */
+        console.groupCollapsed('Декораторы для параметров');
+
         function paramDecorator(target: any, methodName: string, index: number): void {
-            if (showLog) {
-                console.log('target', target);
-                console.log('methodName', methodName || 'constructor');
-                console.log('index', index);
-            }
+            console.log({target, 'methodName': methodName || 'constructor', index});
         }
 
 
         class A {
-
             public publicField: string = 'public field';
             protected protectedField: string;
-            protected newField: string;
+            protected newField: string = '';
 
             constructor(@paramDecorator protectedField: string) {
                 this.protectedField = protectedField;
@@ -1099,20 +1304,93 @@ let log = (obj: any = '') => console.log(obj);
         }
 
         const a = new A('protected field');
-        if (showLog) {
-            console.log('a', a);
+        console.log(A, a);
+        console.groupEnd();
+    }
+
+    /** Порядок вызовов декораторов:
+     * [field] evaluated
+     * [field] called (3) [{…}, 'x', undefined]
+     * [get accessor] evaluated
+     * [get accessor] called (3) [{…}, 'X', {…}]
+     * [set accessor] evaluated
+     * [set accessor param] evaluated
+     * [set accessor param] called (3) [{…}, 'X1', 0]
+     * [set accessor] called (3) [{…}, 'X1', {…}]
+     * [method] evaluated
+     * [method 1st param] evaluated
+     * [method 2nd param] evaluated
+     * [method 2nd param] called (3) [{…}, 'show', 1]
+     * [method 1st param] called (3) [{…}, 'show', 0]
+     * [method] called (3) [{…}, 'show', {…}]
+     * [static field] evaluated
+     * [static field] called (3) [ƒ, 'Sum', undefined]
+     * [static method] evaluated
+     * [static method param] evaluated
+     * [static method param] called (3) [ƒ, 'show', 0]
+     * [static method] called (3) [ƒ, 'show', {…}]
+     * [class] evaluated
+     * [ctor param] evaluated
+     * [ctor param] called (3) [ƒ, undefined, 0]
+     * [class] called [ƒ]
+     */
+    {
+        console.groupCollapsed('Порядок вызовов декораторов');
+
+        function log(name: string): (...args: any[]) => void {
+            console.log(`[${name}] evaluated`);
+            return (...args: any[]) => {
+                console.log(`[${name}] called`, args);
+            }
         }
 
-    } // Декоратор для параметров
+        // @testDecorator
+        @log('class')
+        class C {
+            @log('static field')
+            static Sum: number;
 
+            @log('field')
+            private x: number = 1;
 
+            // @test('ctor')
+            constructor (@log('ctor param') x: number) {
+                this.x = x;
+            }
+
+            @log('static method')
+            static staticShow(@log('static method param') str: string) {
+                log(str);
+            }
+
+            @log('get accessor')
+            get X(): number {
+                return this.x;
+            }
+
+            @log('set accessor')
+            set X1(@log('set accessor param') value: number) {
+                this.x = value;
+            }
+
+            @log('method')
+            show(@log('method 1st param') str1: string, @log('method 2nd param') str2: string) {
+                log(str1 + str2);
+            }
+
+        }
+
+        console.groupEnd();
+    }
+
+    // Моя поделка
     {
         function color(value: string): Function {
-            // log('color decorator is created')
+            log('color decorator is created')
             return (constructor: any) => {
-                // log('color decorator is called')
-                // log(constructor);
-                // constructor.prototype = function(color: string) { this.color = color };
+                log('color decorator is called')
+                log(constructor);
+                // constructor.prototype.color = function(color: string) { this.color = color };
             }
         }
 
@@ -1123,7 +1401,7 @@ let log = (obj: any = '') => console.log(obj);
         type TCtor = {
             new (...args: any[]): {},
             color: string,
-         };
+            };
 
         function color2<T extends TCtor>(targetClass: T) {
             log('color2 decorator is created')
@@ -1152,68 +1430,68 @@ let log = (obj: any = '') => console.log(obj);
         // log(a.color);
         // console.log('Reflect', Reflect);
 
-    } // Моя поделка
+    }
 
+    // Сериализация
     {
-        function first1() {
-            // log('first decorator was called');
-            return (...args: any[]) => {
-                // console.log('first decorator', args);
-            }
-        }
+            // console.groupCollapsed('Мой пример: Сериализация');
+            console.group('Мой пример: Сериализация');
 
-        function test(name: string) {
-            // console.log(`[${name}] evaluated`);
-            return (...args: any[]) => {
-                // console.log(`[${name}] called`, args);
-            }
-        }
+            // @storage.Storable('sessionStorage')
+            class A {
 
-        function testDecorator() {
+                // @storage.Storable
+                public publicFieldA: string = 'public field A';
 
-        }
+                // @storage.Storable
+                protected protectedFieldA: number = 1;
 
-        // @testDecorator
-        @test('class')
-        class C {
-            @test('static field')
-            static Sum: number;
+                // @storage.Storable
+                private privateFieldA: object = {a: 1};
 
-            @test('field')
-            private x: number = 1;
+                constructor() {
 
-            // @test('ctor')
-            constructor (@test('ctor param') x: number) {
-                this.x = x;
+                }
             }
 
-            @test('static method')
-            static show(@test('static method param') str: string) {
-                log(str);
+            // @storage.Storable('localStorage')
+            class B extends A {
+                // @storage.Storable
+                public publicFieldB: string = 'public field B';
+
+                constructor() {
+                    super();
+                }
             }
 
-            @test('get accessor')
-            get X(): number {
-                return this.x;
-            }
+            const a: A = new A();
+            const b: B = new B();
+            console.log(A);
+            console.log(a);
+            console.log(B);
+            console.log(b);
 
-            @test('set accessor')
-            set X1(@test('set accessor param') value: number) {
-                this.x = value;
-            }
+            console.groupEnd();
+    }
 
-            @test('method')
-            show(@test('method 1st param') str1: string, @test('method 2nd param') str2: string) {
-                log(str1 + str2);
-            }
-
-        }
-    } // Порядок вызовов
 }
+// decorators();
 
+// Файлы объявлений
+function declare() {
+    console.group('Файлы объявлений');
+
+    window.onload = () => {
+        // ENV задана в HTML файле и описана в global.d.ts
+        console.log({ENV});
+    };
+
+    console.groupEnd();
+}
+// declare();
 
 // Задания всякие
-{
+if (false) {
     // 1 ---------------------------------------------------
     // Любая попытка выполнить данный метод приводит к ошибке. Необходимо это исправить.
     function createArray(limit: number): number[] {
@@ -1386,84 +1664,90 @@ let log = (obj: any = '') => console.log(obj);
     console.log('123');
 }
 
-type TRules = IRules | IRule;
-interface ISomeObject {
-    Rules: TRules;
-}
+if (true) {
+    console.group('Поярдок инициализации полей');
+    console.group('КАК НЕЛЬЗЯ');
+    console.log('Init должен быть отдельно');
 
-interface IRules {
-    condition: 'OR' | 'AND';
-    rules: TRules[];
-}
-
-interface IRule {
-    filed: string;
-    id: string;
-    input: string;
-    operator: string;
-    type: string;
-    value: string;
-}
-
-const someObj: ISomeObject = {
-    Rules: {
-        condition: 'OR',
-        rules: [{
-            filed: 'RegistrationDate',
-            id: 'RegistrationDate',
-            input: 'text',
-            operator: 'less',
-            type: 'date',
-            value: '2017-07-31'
-        },
-        {
-            condition: 'AND',
-            rules: [{
-                filed: 'RegistrationDate',
-                id: 'RegistrationDate',
-                input: 'text',
-                operator: 'less',
-                type: 'date',
-                value: '2017-07-31'
-            },
-            {
-                filed: 'RegistrationDate',
-                id: 'RegistrationDate',
-                input: 'text',
-                operator: 'less',
-                type: 'date',
-                value: '2017-07-31'
-            }]
-        }]
+    interface IPeopleData {
+        name: string;
+        name2: string;
+        old: number;
     }
-};
 
-const someObj2: ISomeObject = {
-    Rules: {
-        filed: 'RegistrationDate',
-        id: 'RegistrationDate',
-        input: 'text',
-        operator: 'less',
-        type: 'date',
-        value: '2017-07-31'
+    interface IEmployeeData extends IPeopleData {
+        work: string;
     }
-};
 
+    abstract class Base<T> {
+        constructor(data: T | unknown) {
+            this.init(data);
+        }
 
-interface ISomeObject2 {
-    rules: IRules2 | IRule2;
-}
+        protected abstract isValidData(data: T | unknown): data is T;
+        protected abstract setData(data: T): void;
 
-interface IRules2 {
-    condition: 'OR' | 'AND';
-    items: IRules2 | IRule2;
-}
+        protected init(data: T | unknown): void {
+            if (this.isValidData(data)) {
+                this.setData(data);
+            }
+        }
+    }
 
-interface IRule2 {
-    filed: string;
-    id: string;
-    input: string;
-    operator: string;
-    type: string;
-    value: string;
+    class People<T extends IPeopleData = IPeopleData> extends Base<T> {
+        name: string = '';
+        name2: string | undefined;
+        old: number = 0;
+
+        constructor(data: T | unknown) {
+            super(data);
+        }
+
+        protected override isValidData(data: unknown): data is T {
+            return true;
+        }
+
+        protected override setData(data: T): void {
+            console.log('People', 'setData', data);
+
+            this.name = data.name;
+            this.name2 = data.name2;
+            this.old = data.old;
+        }
+    }
+
+    class Employee extends People<IEmployeeData> {
+        work: string = '';
+
+        constructor(data: IEmployeeData | unknown) {
+            super(data);
+        }
+
+        protected override isValidData(data: unknown): data is IEmployeeData {
+            return (!!data && typeof(data) === 'object' && 'work' in data);
+        }
+
+        protected override setData(data: IEmployeeData): void {
+            console.log('Employee', 'setData', data);
+
+            super.setData(data)
+            this.work = data.work;
+        }
+    }
+
+    const peopleData: IEmployeeData = {
+        name: 'Evgenii',
+        name2: 'Fishov',
+        old: 39,
+        work: 'SoftGamings',
+    };
+
+    const people: People = new People(peopleData);
+    console.log(people);
+
+    const employee: Employee = new Employee(peopleData);
+    console.log(employee);
+
+    console.groupEnd();
+    console.groupEnd();
 }

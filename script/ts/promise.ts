@@ -1,6 +1,6 @@
 init();
 
-async function init() {
+async function init(): Promise<number> {
     let a;
     try {
         a = await waitPromise()
@@ -13,6 +13,7 @@ async function init() {
         //     return 5;
         // });
     console.log('a = ', a);
+    return a;
 }
 
 

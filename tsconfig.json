@@ -3,15 +3,18 @@
       "module": "CommonJS",
       "outDir": "dist/js",
       "removeComments": true,
-      // "sourceMap":true,
+      "sourceMap":true,
       "strict": true,
       "target": "ESNext",
       "experimentalDecorators": true,
       // "emitDecoratorMetadata": true,
-      // "noUnusedLocals": true,
+      "noUnusedLocals": false,
       "useDefineForClassFields": true,
-      "strictNullChecks": false,
+      "strictNullChecks": true,
       "noImplicitReturns": true,
       "noImplicitOverride": true,
-    }
+    },
+    "exclude": [
+      "script/ts/elevator.ts",
+    ]
 }

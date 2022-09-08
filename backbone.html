@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf8" />
+        <title>Backbone</title>
+        <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.css" />
+        <script src="node_modules/lodash/lodash.js"></script>
+        <script src="node_modules/jbone/dist/jbone.js"></script>
+        <script src="node_modules/backbone/backbone.js"></script>
+        <script defer src="dist/js/backbone.js"></script>
+    </head>
+    <body>
+        <div id="pageLayoutRegion">
+        </div>
+
+        <script type="text/javascript">
+            window.onload = () => {
+                ScreenViewApp.start();
+            }
+        </script>
+
+        <script type="text/template" id="itemCollectionViewTemplate">
+            <h1> <%= title %> </h1>
+            <div id="ulRegions"></div>
+            <div> Selected Item :
+                     <%= selectedItem.itemId %> -
+                     <%= selectedItem.itemName %>
+            <div>
+            <div class="form-group">
+                <label for="inputName">Name :</label>
+                <input type="text"
+                        id="inputName"
+                        class="form-control input-name"
+                        placeholder="<%= inputPlaceholder %>"
+                        value="<%= inputName %>" />
+           </div>
+           <button id="submit-button-button"
+                    class="submit-button">Submit</button>
+        </script>
+
+        <script type="text/template" id="itemViewTemplate">
+            <button style="margin: 5px;" class="btn btn-primary">
+                    <%= itemName %>
+            </button>
+        </script>
+
+        <script type="text/javascript">
+            'strict';
+            const ENV = 'dev';
+        </script>
+    </body>
+</html>
