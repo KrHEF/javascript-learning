@@ -146,7 +146,7 @@ class ScreenViewApp {
         const itemCollection: ItemCollection = new ItemCollection(itemModels);
 
         const itemCollectionModel: ItemCollectionModel = new ItemCollectionModel({
-            title: 'Title',
+            title: 'Press button',
             selectedItem: {
                 itemId: 0,
                 itemName: 'None selected',
@@ -177,5 +177,3 @@ const clickableItems: IClickableItem[] = [
     {itemId: 2, itemName: '2nd item'},
     {itemId: 3, itemName: '3d item'},
 ]
-
-
