@@ -14,6 +14,9 @@
       "noImplicitReturns": true,
       "noImplicitOverride": true,
     },
+    "include": [
+      "script/ts/**/*.ts",
+    ],
     "exclude": [
       "script/ts/elevator.ts",
     ]

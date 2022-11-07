@@ -225,7 +225,7 @@ function types() {
             swim: string = "";
         }
 
-        let pet: Bird | Fish = (Math.random() > 0.5) ? new Bird() : new Fish();
+        const pet: Bird | Fish = (Math.random() > 0.5) ? new Bird() : new Fish();
 
         // if (pet.fly) pet.fly();     // Ошибка, т. к. fly есть в обоих типах
         if (pet.fly && typeof(pet.fly) == 'function') { pet.fly() };
@@ -253,8 +253,41 @@ function types() {
         }
 
         // instanceof, через prototype
+        if (pet instanceof Fish) {
+            // pet is Fish
+        }
+        if (pet instanceof Bird) {
+            // pet is Bird
+        }
 
+        const isFishConst: boolean = (pet instanceof Fish);
+        if (isFishConst) {
+            // pet: Fish | Bird ???? WTF ????
+        }
 
+        // сужение без проверки через (arrests ... is ...)
+        function itIsFish(pet: unknown): asserts pet is Fish {
+            if (!(pet instanceof Fish)) {
+                throw new Error('C\'mon! It is not Fish!');
+            }
+        }
+
+        itIsFish(pet);
+        console.log('I\'m fish!')
+        pet.swim();
+    }
+
+    // Сужение через `as const`
+    {
+        // Наведи на имя константы, чтобы посмотреть типы.
+
+        const a = {
+            name: 'A',
+        };
+
+        const b = {
+            name: 'B',
+        } as const;
     }
 
     // Проверка на null (?? - оператор терсер)
@@ -306,12 +339,13 @@ function types() {
 
 // Интерфейсы TrueScript
 const interfaces = () => {
-    // Инстрефейсы работают по принципу "утиной типизации" или "стрктурнго подтипирования".
+    // Инстрефейсы работают по принципу "утиной типизации" или "структурного подтипирования".
     // Компилятор проверяет, что переданный объект удовлетворяет описанной структуре
     //  name? - опциональное св-во
     //  readnonly - свойство только для чтения
     // Не могут содержать реализацию, в отличие от абстрактных классов
 
+    // Пример 1
     {
         interface IVehilce {
             wheelsCount: number;
@@ -352,7 +386,9 @@ const interfaces = () => {
 
         Go(porche);
         GoAgain(porche);
-    } // Пример 1
+    }
+
+    // Избыточные свойства и способы обхода
     {
         interface SquareConfig {
             color?: string;
@@ -377,7 +413,9 @@ const interfaces = () => {
         let mySquare5 = createSquare({ width: 100 });
 
 
-    } // Избыточные свойства и способы обхода
+    }
+
+    // типы для индексов
     {
         interface StringArray {
             [index: string]: string;
@@ -416,7 +454,9 @@ const interfaces = () => {
         let arr3: MyReadOnlyArray = ['0', '1'];     // Массив задается при объявлении
         // arr3[2] = '2';           // и всё
 
-    } // типы для индексов
+    }
+
+    // Классы реализующие интерфейс (ClassName implemets InterfaceName)
     {
         interface IClock {
             currentTime: Date;
@@ -434,7 +474,9 @@ const interfaces = () => {
             }
         }
 
-    } // Классы реализующие интерфейс (ClassName implemets InterfaceName)
+    }
+
+    // Наследование интерфейсов (InterfaceName extends InterfaceName1, InterfaceName2 ...)
     {
         interface Shape {
             color: string;
@@ -449,10 +491,14 @@ const interfaces = () => {
         // square.app = 1; // Error, нет такого поля
         // log(square);
 
-    } // Наследование интерфейсов (InterfaceName extends InterfaceName1, InterfaceName2 ...)
+    }
+
+    // Гибридные типы
     {
         // Ой чего-тот непросто!
-    } // Гибридные типы
+    }
+
+    // Интерфейсы, расширяющие классы, для наследования защищенных и приватных полей
     {
         class Control {
             private state: any;
@@ -468,15 +514,30 @@ const interfaces = () => {
         }
 
         class TextBox extends Control {
-            //select() {}
+            // select() {}
         }
 
         // class ImageControl implements SelectableControl {
         //     private state: any;      // не может наследовать приватные поля
         //     select() {}
         // }
-    } // Интерфейсы, расширяющие классы, для наследования защищенных и приватных полей
+    }
 
+    // Слияние интерфейсов (Merging)
+    {
+        interface IMerge {
+            a: number;
+        }
+
+        interface IMerge {
+            b: string;
+        }
+
+        const merge: IMerge = {
+            a: 0,
+            b: 'b'
+        };
+    }
 }
 
 // Функции
@@ -691,7 +752,8 @@ if (false) {
 }
 
 // Классы
-if (false) {
+if (true) {
+    // Наследование и модификаторы
     {
         // public - публичное поле, видно снаружи и следовательно в подклассах
         // protected - защищенные поля, не видны снаружи, но видны в подклассах
@@ -732,11 +794,15 @@ if (false) {
         // dog.voice();
         // log(dog);
 
-    } // Наследование и модификаторы
+    }
+
+    // Объявление и инициализция на месте // Геттеры и сеттеры
     {
         class Animal {
-            public constructor(protected readonly name: string,
-                               private hasTail: boolean = false) {
+            public constructor(
+                protected readonly name: string,
+                private hasTail: boolean = false
+            ) {
                 // Объявили защищенное поле name и приветное часнтное поле hasTail без присваивания и this
             }
 
@@ -746,7 +812,9 @@ if (false) {
         let dog = new Animal("Tuzik", true);
         //log(dog);
 
-    } // Объявление и инициализция на месте // Геттеры и сеттеры
+    }
+
+    // Абстрактные классы
     {
         // На сколько я помню, асбтрактным является класс, который содержит хотя бы одно асбтрактное поле или метод.
 
@@ -782,7 +850,9 @@ if (false) {
         // cat.drink("milk");      // Error, Animal не содержит метод drink
         // (cat as Cat).drink("milk");  // Ok
 
-    } // Абстрактные классы
+    }
+
+    // Использование класса в качестве Интерфейса
     {
         class Point {
             x: number = 0;
@@ -794,7 +864,22 @@ if (false) {
         }
 
         let point3d: Point3d = { x: 1, y: 2, z: 3 };
-    } // Использование класса в качестве Интерфейса
+    }
+
+    // Инициализация статических полей в стаческом блоке
+    {
+        // Только не понятно, зачем он нужен.
+        class A {
+            public static field: number = 0;
+
+            static {
+                this.field = 1;
+            }
+        }
+
+        // const a = new A();
+        console.log(A.field); // => 1
+    }
 }
 
 // Generics / Обобщения
@@ -950,7 +1035,7 @@ function generics() {
 // generics();
 
 
-// Служебные типы
+//  Utility Types / Служебные типы
 if (false) {
     {
         interface Animal {
@@ -1664,7 +1749,9 @@ if (false) {
     console.log('123');
 }
 
-if (true) {
+// Поярдок инициализации полей
+// КАК НЕЛЬЗЯ
+if (false) {
     console.group('Поярдок инициализации полей');
     console.group('КАК НЕЛЬЗЯ');
     console.log('Init должен быть отдельно');
@@ -1724,7 +1811,7 @@ if (true) {
         }
 
         protected override isValidData(data: unknown): data is IEmployeeData {
-            return (!!data && typeof(data) === 'object' && 'work' in data);
+            return (!!data && typeof(data) === 'object' && ('work' in data!));
         }
 
         protected override setData(data: IEmployeeData): void {
